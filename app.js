@@ -404,6 +404,29 @@ function renderAdvancedReport() {
     .join("");
 }
 
+async function refreshAiWeeklyReport() {
+  try {
+    const response = await fetch("/api/weekly-report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ records: weeklyMealData }),
+    });
+    const report = await response.json();
+    if (report.summary) weeklyNarrative.textContent = report.summary;
+    if (report.warnings?.length) {
+      warningList.innerHTML = report.warnings.map((text) => `<div class="warning-item">${text}</div>`).join("");
+    }
+    if (report.badges?.length) {
+      badgeList.innerHTML = report.badges.map((text) => `<div class="badge-item">${text}</div>`).join("");
+    }
+    if (report.keywords?.length) {
+      weekKeywords.textContent = report.keywords.join(" / ");
+    }
+  } catch {
+    renderAdvancedReport();
+  }
+}
+
 function renderStickers(offsetX = 0, offsetY = 0) {
   stickerCount.textContent = `${stickers.length} 张`;
   stickerWall.innerHTML = stickers
@@ -641,12 +664,55 @@ function setResult() {
   renderBudget();
 }
 
-function recognizeImage(src) {
+function normalizeAiFoods(result) {
+  if (!result?.foods?.length) return createDetectedFoods();
+  return result.foods.map((food, index) => {
+    const range = Array.isArray(food.kcalRange) ? food.kcalRange : [food.kcal || 160, food.kcal || 220];
+    const midpoint = Math.round((Number(range[0]) + Number(range[1])) / 2);
+    return {
+      id: food.id || `ai-food-${index}`,
+      name: food.name || "未知食物",
+      baseKcal: midpoint,
+      kcalRange: range,
+      protein: Number(food.protein) || 0,
+      carb: Number(food.carb) || 0,
+      fat: Number(food.fat) || 0,
+      portion: 1,
+      cooking: "steam",
+      box: food.box || { left: 12 + index * 12, top: 18 + index * 8, width: 32, height: 26 },
+    };
+  });
+}
+
+async function analyzeFoodWithAi(image) {
+  const response = await fetch("/api/analyze-food-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image }),
+  });
+  if (!response.ok) throw new Error("AI 食物识别失败");
+  return response.json();
+}
+
+async function recognizeImage(src) {
   foodPreview.src = src;
   foodPreview.hidden = false;
   emptyCamera.hidden = true;
   setRecognizing();
-  window.setTimeout(setResult, 1300);
+  try {
+    const result = await analyzeFoodWithAi(src);
+    detectedFoods = normalizeAiFoods(result);
+    selectedFoodId = detectedFoods[0].id;
+    updateCurrentMealLog();
+    addSticker("AI 餐盘识别", getTotals().kcal);
+    confidenceText.textContent = result.summary?.confidence || "AI 已返回热量区间，请确认份量。";
+    cutoutMask.hidden = true;
+    scanLine.hidden = true;
+    refreshResultUi();
+    renderBudget();
+  } catch {
+    window.setTimeout(setResult, 700);
+  }
 }
 
 foodInput.addEventListener("change", (event) => {
@@ -824,9 +890,20 @@ drinkSizeOptions.addEventListener("click", handleDrinkOptionClick);
 sugarOptions.addEventListener("click", handleDrinkOptionClick);
 toppingOptions.addEventListener("click", handleDrinkOptionClick);
 
-barcodeButton.addEventListener("click", () => {
+barcodeButton.addEventListener("click", async () => {
   packageGramInput.value = 45;
-  addRecord("全麦蛋白棒", 176, "snack");
+  try {
+    const response = await fetch("/api/barcode-lookup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ barcode: "6900000000000" }),
+    });
+    const food = await response.json();
+    const kcal = Math.round((food.kcalPer100g / 100) * Number(packageGramInput.value));
+    addRecord(food.productName || "包装食品", kcal, "snack");
+  } catch {
+    addRecord("全麦蛋白棒", 176, "snack");
+  }
 });
 
 foodSearchButton.addEventListener("click", () => {
@@ -840,8 +917,19 @@ addPackageButton.addEventListener("click", () => {
   addRecord("全麦蛋白棒", kcal, "snack");
 });
 
-ocrButton.addEventListener("click", () => {
-  addSticker("营养表 OCR", 196);
+ocrButton.addEventListener("click", async () => {
+  try {
+    const response = await fetch("/api/ocr-nutrition", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image: null }),
+    });
+    const result = await response.json();
+    const kcal = result.per100g?.energyKcal || result.perServing?.energyKcal || 196;
+    addSticker(result.productName || "营养表 OCR", kcal);
+  } catch {
+    addSticker("营养表 OCR", 196);
+  }
 });
 
 saveCustomFoodButton.addEventListener("click", () => {
@@ -898,6 +986,7 @@ renderBars();
 renderMealTypeOptions();
 renderMealStats();
 renderAdvancedReport();
+refreshAiWeeklyReport();
 renderContextTip();
 renderStickers();
 renderBudget();
