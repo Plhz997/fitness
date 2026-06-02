@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>食光热量</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="phone-shell" aria-label="食光热量手机端应用">
+      <section class="app-screen">
+        <header class="top-bar">
+          <div>
+            <p class="eyebrow">今日记录</p>
+            <h1>食光热量</h1>
+          </div>
+          <button class="icon-button" aria-label="打开个人中心">
+            <span aria-hidden="true">⌁</span>
+          </button>
+        </header>
+
+        <section class="budget-panel" aria-label="每日热量预算">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">每日热量预算</p>
+              <h2>今日推荐摄入</h2>
+            </div>
+            <strong><span id="dailyBudget">1800</span> kcal</strong>
+          </div>
+          <div class="budget-meter" aria-label="今日预算使用进度">
+            <span id="budgetFill"></span>
+          </div>
+          <div class="budget-grid">
+            <div>
+              <small>早餐已摄入</small>
+              <strong><span id="breakfastKcal">420</span> kcal</strong>
+            </div>
+            <div>
+              <small>午餐已摄入</small>
+              <strong><span id="lunchKcal">760</span> kcal</strong>
+            </div>
+            <div>
+              <small>剩余预算</small>
+              <strong><span id="remainingBudget">620</span> kcal</strong>
+            </div>
+          </div>
+          <details class="profile-panel">
+            <summary>首次使用资料设置</summary>
+            <form class="profile-form" id="profileForm">
+              <label>
+                <span>身高 cm</span>
+                <input id="heightInput" type="number" min="120" max="230" value="170" />
+              </label>
+              <label>
+                <span>体重 kg</span>
+                <input id="weightInput" type="number" min="35" max="220" value="62" />
+              </label>
+              <label>
+                <span>年龄</span>
+                <input id="ageInput" type="number" min="12" max="90" value="30" />
+              </label>
+              <label>
+                <span>性别</span>
+                <select id="genderInput">
+                  <option value="female">女</option>
+                  <option value="male" selected>男</option>
+                </select>
+              </label>
+              <label>
+                <span>目标</span>
+                <select id="goalInput">
+                  <option value="loss" selected>减脂</option>
+                  <option value="maintain">维持</option>
+                  <option value="gain">增肌</option>
+                  <option value="record">健康记录</option>
+                </select>
+              </label>
+              <label>
+                <span>活动水平</span>
+                <select id="activityInput">
+                  <option value="sedentary">久坐</option>
+                  <option value="light" selected>轻度运动</option>
+                  <option value="moderate">中度运动</option>
+                  <option value="high">高强度运动</option>
+                </select>
+              </label>
+              <button class="primary-action profile-submit" type="submit">生成预算</button>
+            </form>
+          </details>
+        </section>
+
+        <section class="camera-panel" aria-label="拍照识别食物">
+          <div class="camera-stage" id="cameraStage">
+            <img id="foodPreview" alt="" hidden />
+            <div class="cutout-mask" id="cutoutMask" hidden></div>
+            <div class="food-box-layer" id="foodBoxLayer" aria-label="餐盘多食物识别框"></div>
+            <div class="empty-camera" id="emptyCamera">
+              <span class="camera-icon" aria-hidden="true">◌</span>
+              <p>拍照或上传食物</p>
+            </div>
+            <span class="scan-line" id="scanLine" hidden></span>
+          </div>
+          <div class="camera-actions">
+            <label class="primary-action" for="foodInput">拍照识别</label>
+            <input id="foodInput" type="file" accept="image/*" capture="environment" />
+            <button class="secondary-action" id="demoButton" type="button">使用示例</button>
+          </div>
+          <div class="meal-type-panel" aria-label="餐次分类">
+            <div class="meal-type-heading">
+              <small>自动判断餐次</small>
+              <strong id="mealTypeHint">午餐</strong>
+            </div>
+            <div class="meal-type-options" id="mealTypeOptions" role="group" aria-label="选择餐次"></div>
+          </div>
+        </section>
+
+        <section class="result-panel" aria-live="polite">
+          <div class="result-heading">
+            <div>
+              <p class="eyebrow">AI 初步识别</p>
+              <h2 id="foodName">等待确认</h2>
+            </div>
+            <span class="status-pill" id="statusPill">未开始</span>
+          </div>
+          <div class="confirm-strip">
+            <div>
+              <small>请确认</small>
+              <strong id="confirmText">上传图片后可校正识别结果</strong>
+            </div>
+            <button class="confirm-button" id="confirmButton" type="button" disabled>确认正确</button>
+          </div>
+          <div class="detected-list" id="detectedList" aria-label="可编辑识别结果"></div>
+          <div class="calorie-card">
+            <p>确认后估算热量</p>
+            <strong><span id="calorieValue">--</span> kcal</strong>
+            <small id="confidenceText">份量和烹饪方式会影响最终热量</small>
+          </div>
+          <div class="nutrition-grid" aria-label="营养估算">
+            <div>
+              <span id="proteinValue">--</span>
+              <small>蛋白质</small>
+            </div>
+            <div>
+              <span id="carbValue">--</span>
+              <small>碳水</small>
+            </div>
+            <div>
+              <span id="fatValue">--</span>
+              <small>脂肪</small>
+            </div>
+          </div>
+        </section>
+
+        <section class="drink-panel" aria-label="饮料识别模块">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">独立饮料识别</p>
+              <h2>奶茶 / 咖啡 / 果汁</h2>
+            </div>
+            <span id="drinkStatus">待识别</span>
+          </div>
+          <div class="drink-preview" id="drinkPreview">
+            <div>
+              <span aria-hidden="true">◍</span>
+              <p id="drinkName">拍照识别饮料</p>
+            </div>
+          </div>
+          <div class="camera-actions">
+            <label class="primary-action" for="drinkInput">拍照识别饮料</label>
+            <input id="drinkInput" type="file" accept="image/*" capture="environment" />
+            <button class="secondary-action" id="drinkDemoButton" type="button">饮料示例</button>
+          </div>
+          <div class="drink-controls">
+            <div>
+              <span class="field-label">识别类型</span>
+              <div class="drink-options" id="drinkTypeOptions" role="group" aria-label="选择饮料类型"></div>
+            </div>
+            <div>
+              <span class="field-label">选择规格</span>
+              <div class="drink-options" id="drinkSizeOptions" role="group" aria-label="选择规格"></div>
+            </div>
+            <div>
+              <span class="field-label">选择糖度</span>
+              <div class="drink-options" id="sugarOptions" role="group" aria-label="选择糖度"></div>
+            </div>
+            <div>
+              <span class="field-label">选择配料</span>
+              <div class="topping-options" id="toppingOptions" aria-label="选择配料"></div>
+            </div>
+          </div>
+          <div class="drink-result">
+            <small>饮料估算热量</small>
+            <strong><span id="drinkCalories">--</span> kcal</strong>
+            <p id="drinkDetail">选择规格、糖度和配料后生成估算</p>
+          </div>
+        </section>
+
+        <section class="weekly-panel" aria-label="每周热量统计">
+          <div class="section-title">
+            <h2>每周热量统计</h2>
+            <span id="weeklyTotal">10,820 kcal</span>
+          </div>
+          <div class="bars" id="weeklyBars"></div>
+          <div class="week-summary">
+            <div>
+              <small>日均</small>
+              <strong id="averageValue">1,546</strong>
+            </div>
+            <div>
+              <small>目标内</small>
+              <strong>5 天</strong>
+            </div>
+            <div>
+              <small>最高</small>
+              <strong id="peakValue">1,920</strong>
+            </div>
+          </div>
+          <div class="meal-insights">
+            <div>
+              <small>本周早餐平均</small>
+              <strong id="breakfastAvg">--</strong>
+            </div>
+            <div>
+              <small>本周晚餐平均</small>
+              <strong id="dinnerAvg">--</strong>
+            </div>
+            <div>
+              <small>夜宵次数</small>
+              <strong id="lateSnackCount">--</strong>
+            </div>
+          </div>
+          <div class="share-chart" aria-label="饮料与加餐热量占比">
+            <div class="share-row">
+              <span>饮料热量占比</span>
+              <div><i id="drinkShareBar"></i></div>
+              <strong id="drinkShareText">--</strong>
+            </div>
+            <div class="share-row">
+              <span>加餐热量占比</span>
+              <div><i id="snackShareBar"></i></div>
+              <strong id="snackShareText">--</strong>
+            </div>
+          </div>
+        </section>
+
+        <nav class="bottom-nav" aria-label="底部导航">
+          <button class="nav-item active" type="button">
+            <span aria-hidden="true">⌂</span>
+            记录
+          </button>
+          <button class="nav-item" type="button">
+            <span aria-hidden="true">◧</span>
+            统计
+          </button>
+          <button class="nav-item" type="button">
+            <span aria-hidden="true">◎</span>
+            我的
+          </button>
+        </nav>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
