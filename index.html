@@ -19,6 +19,18 @@
           </button>
         </header>
 
+        <section class="sticker-panel" aria-label="饮食照片贴纸墙">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">照片日记</p>
+              <h2>今日饮食贴纸</h2>
+            </div>
+            <span id="stickerCount">0 张</span>
+          </div>
+          <div class="sticker-wall" id="stickerWall"></div>
+          <button class="secondary-action motion-button" id="motionButton" type="button">开启重力贴纸</button>
+        </section>
+
         <section class="budget-panel" aria-label="每日热量预算">
           <div class="section-title">
             <div>
@@ -89,6 +101,51 @@
           </details>
         </section>
 
+        <section class="smart-tools-panel" aria-label="包装食品与营养识别">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">包装食品</p>
+              <h2>条形码 / 营养表</h2>
+            </div>
+            <span>数据库匹配</span>
+          </div>
+          <div class="tool-card">
+            <div class="tool-heading">
+              <strong>条形码扫描</strong>
+              <button class="secondary-action compact-action" id="barcodeButton" type="button">扫描条形码</button>
+            </div>
+            <div class="manual-search">
+              <input id="foodSearchInput" type="search" placeholder="没有条形码？搜索食品名称" />
+              <button class="secondary-action compact-action" id="foodSearchButton" type="button">搜索</button>
+            </div>
+            <div class="packaged-result" id="barcodeResult">
+              <small>匹配食品数据库</small>
+              <strong>全麦蛋白棒</strong>
+              <span>每 100g 约 390 kcal</span>
+              <label>
+                <span>吃了多少克</span>
+                <input id="packageGramInput" type="number" min="1" value="45" />
+              </label>
+              <button class="primary-action compact-action" id="addPackageButton" type="button">加入今日记录</button>
+            </div>
+          </div>
+          <div class="tool-card">
+            <div class="tool-heading">
+              <strong>营养成分表 OCR</strong>
+              <button class="secondary-action compact-action" id="ocrButton" type="button">拍摄营养表</button>
+            </div>
+            <div class="ocr-fields" id="ocrFields">
+              <div><small>能量</small><strong>820 kJ / 196 kcal</strong></div>
+              <div><small>蛋白质</small><strong>8.6g</strong></div>
+              <div><small>脂肪</small><strong>5.2g</strong></div>
+              <div><small>碳水</small><strong>28.4g</strong></div>
+              <div><small>钠</small><strong>260mg</strong></div>
+              <div><small>每 100g</small><strong>196 kcal</strong></div>
+            </div>
+            <button class="primary-action compact-action" id="saveCustomFoodButton" type="button">保存为自定义食品</button>
+          </div>
+        </section>
+
         <section class="camera-panel" aria-label="拍照识别食物">
           <div class="camera-stage" id="cameraStage">
             <img id="foodPreview" alt="" hidden />
@@ -151,6 +208,57 @@
           </div>
         </section>
 
+        <section class="manual-panel" aria-label="手动添加与常用食物">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">手动补救</p>
+              <h2>常用食物</h2>
+            </div>
+            <span>一键添加</span>
+          </div>
+          <div class="quick-actions">
+            <button type="button" data-quick="拿铁 + 贝果" data-kcal="520">拿铁 + 贝果</button>
+            <button type="button" data-quick="鸡胸肉沙拉" data-kcal="430">鸡胸肉沙拉</button>
+            <button type="button" data-quick="食堂鸡腿饭" data-kcal="680">食堂鸡腿饭</button>
+            <button type="button" data-quick="复制昨天早餐" data-kcal="420">复制昨天早餐</button>
+          </div>
+        </section>
+
+        <section class="context-panel" aria-label="健康目标与地点推荐">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">学生党模式</p>
+              <h2>地点与目标</h2>
+            </div>
+            <span id="modeHint">控奶茶</span>
+          </div>
+          <div class="context-grid">
+            <label>
+              <span>健康目标模式</span>
+              <select id="healthModeInput">
+                <option value="student" selected>学生党模式</option>
+                <option value="loss">减脂模式</option>
+                <option value="gain">增肌模式</option>
+                <option value="sugar">控糖模式</option>
+                <option value="light">清淡饮食模式</option>
+                <option value="takeout">外卖模式</option>
+              </select>
+            </label>
+            <label>
+              <span>常吃地点</span>
+              <select id="placeInput">
+                <option>学校食堂一楼</option>
+                <option>学校食堂二楼</option>
+                <option>麦当劳</option>
+                <option>瑞幸</option>
+                <option>便利店</option>
+                <option>外卖店铺</option>
+              </select>
+            </label>
+          </div>
+          <p class="context-tip" id="contextTip">根据你最近记录，这可能是鸡腿饭。约 520-650 kcal，确认一碗米饭后可缩小到 575-610 kcal。</p>
+        </section>
+
         <section class="drink-panel" aria-label="饮料识别模块">
           <div class="section-title">
             <div>
@@ -197,9 +305,10 @@
 
         <section class="weekly-panel" aria-label="每周热量统计">
           <div class="section-title">
-            <h2>每周热量统计</h2>
+            <h2>饮食周报</h2>
             <span id="weeklyTotal">10,820 kcal</span>
           </div>
+          <p class="weekly-narrative" id="weeklyNarrative">本周共记录 18 餐，日均摄入 1760 kcal。</p>
           <div class="bars" id="weeklyBars"></div>
           <div class="week-summary">
             <div>
@@ -241,6 +350,19 @@
               <strong id="snackShareText">--</strong>
             </div>
           </div>
+          <div class="macro-chart" aria-label="三大营养素比例">
+            <span id="carbMacro"></span>
+            <span id="proteinMacro"></span>
+            <span id="fatMacro"></span>
+          </div>
+          <div class="report-grid">
+            <div><small>最低热量日</small><strong id="lowestDay">周三</strong></div>
+            <div><small>超预算天数</small><strong id="overBudgetDays">2 天</strong></div>
+            <div><small>连续记录</small><strong id="streakDays">7 天</strong></div>
+            <div><small>本周关键词</small><strong id="weekKeywords">食堂 / 奶茶 / 蛋白偏低</strong></div>
+          </div>
+          <div class="warning-list" id="warningList" aria-label="饮食趋势预警"></div>
+          <div class="badge-list" id="badgeList" aria-label="饮食成就"></div>
         </section>
 
         <nav class="bottom-nav" aria-label="底部导航">

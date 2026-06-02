@@ -125,8 +125,12 @@ h2 {
 
 .budget-panel,
 .camera-panel,
+.context-panel,
 .drink-panel,
+.manual-panel,
 .result-panel,
+.smart-tools-panel,
+.sticker-panel,
 .weekly-panel {
   position: relative;
   z-index: 1;
@@ -453,13 +457,213 @@ h2 {
   color: var(--paper-dark);
 }
 
+.context-panel,
 .drink-panel,
+.manual-panel,
 .result-panel,
+.smart-tools-panel,
+.sticker-panel,
 .weekly-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: rgba(255, 247, 232, 0.46);
   padding: 14px;
+}
+
+.sticker-panel .section-title span,
+.context-panel .section-title span,
+.manual-panel .section-title span,
+.smart-tools-panel .section-title span {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.sticker-wall {
+  position: relative;
+  min-height: 206px;
+  overflow: hidden;
+  border: 1px dashed rgba(47, 37, 27, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.34);
+  margin-top: 12px;
+}
+
+.food-sticker {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  min-height: 86px;
+  border: 2px solid rgba(255, 247, 232, 0.86);
+  border-radius: 999px 8px 999px 12px;
+  background: var(--sticker-bg, #6f8a53);
+  box-shadow: 0 12px 24px rgba(47, 37, 27, 0.2);
+  color: var(--cream);
+  font-size: 12px;
+  font-weight: 850;
+  padding: 12px;
+  text-align: center;
+  transform: translate(var(--tilt-x, 0), var(--tilt-y, 0)) rotate(var(--rotate, -4deg));
+  transition: transform 0.18s ease;
+}
+
+.food-sticker small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+}
+
+.motion-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.tool-card,
+.context-tip {
+  border: 1px solid rgba(47, 37, 27, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.5);
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.tool-heading,
+.manual-search {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.compact-action {
+  min-height: 38px;
+  padding: 0 12px;
+}
+
+.manual-search {
+  margin-top: 10px;
+}
+
+.manual-search input,
+.packaged-result input,
+.context-grid select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.72);
+  color: var(--ink);
+  padding: 0 10px;
+  font-weight: 800;
+}
+
+.packaged-result {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.packaged-result small,
+.packaged-result span,
+.packaged-result label span,
+.context-grid span,
+.context-tip,
+.weekly-narrative {
+  color: var(--muted);
+}
+
+.packaged-result label {
+  display: grid;
+  gap: 6px;
+}
+
+.ocr-fields,
+.context-grid,
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ocr-fields div,
+.report-grid div {
+  min-width: 0;
+  border: 1px solid rgba(47, 37, 27, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.38);
+  padding: 10px;
+}
+
+.ocr-fields small,
+.report-grid small {
+  display: block;
+  color: var(--muted);
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quick-actions button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.56);
+  color: var(--paper-dark);
+  cursor: pointer;
+  font-weight: 850;
+}
+
+.context-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.macro-chart {
+  display: flex;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(47, 37, 27, 0.12);
+  margin-top: 14px;
+}
+
+.macro-chart span:nth-child(1) {
+  width: 48%;
+  background: #8a6a38;
+}
+
+.macro-chart span:nth-child(2) {
+  width: 22%;
+  background: var(--green);
+}
+
+.macro-chart span:nth-child(3) {
+  width: 30%;
+  background: var(--ink);
+}
+
+.warning-list,
+.badge-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.warning-item,
+.badge-item {
+  border: 1px solid rgba(47, 37, 27, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 247, 232, 0.5);
+  padding: 10px;
+  color: var(--paper-dark);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .drink-panel .section-title span {
@@ -989,7 +1193,10 @@ h2 {
   }
 
   .budget-grid,
+  .context-grid,
+  .ocr-fields,
   .profile-form,
+  .report-grid,
   .meal-insights {
     grid-template-columns: 1fr;
   }

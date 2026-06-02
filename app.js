@@ -1,4 +1,18 @@
 const foodInput = document.querySelector("#foodInput");
+const stickerWall = document.querySelector("#stickerWall");
+const stickerCount = document.querySelector("#stickerCount");
+const motionButton = document.querySelector("#motionButton");
+const barcodeButton = document.querySelector("#barcodeButton");
+const foodSearchInput = document.querySelector("#foodSearchInput");
+const foodSearchButton = document.querySelector("#foodSearchButton");
+const packageGramInput = document.querySelector("#packageGramInput");
+const addPackageButton = document.querySelector("#addPackageButton");
+const ocrButton = document.querySelector("#ocrButton");
+const saveCustomFoodButton = document.querySelector("#saveCustomFoodButton");
+const healthModeInput = document.querySelector("#healthModeInput");
+const placeInput = document.querySelector("#placeInput");
+const modeHint = document.querySelector("#modeHint");
+const contextTip = document.querySelector("#contextTip");
 const drinkInput = document.querySelector("#drinkInput");
 const demoButton = document.querySelector("#demoButton");
 const drinkDemoButton = document.querySelector("#drinkDemoButton");
@@ -51,6 +65,13 @@ const drinkShareBar = document.querySelector("#drinkShareBar");
 const snackShareBar = document.querySelector("#snackShareBar");
 const drinkShareText = document.querySelector("#drinkShareText");
 const snackShareText = document.querySelector("#snackShareText");
+const weeklyNarrative = document.querySelector("#weeklyNarrative");
+const lowestDay = document.querySelector("#lowestDay");
+const overBudgetDays = document.querySelector("#overBudgetDays");
+const streakDays = document.querySelector("#streakDays");
+const weekKeywords = document.querySelector("#weekKeywords");
+const warningList = document.querySelector("#warningList");
+const badgeList = document.querySelector("#badgeList");
 
 const portionOptions = [
   { label: "半碗", value: 0.5 },
@@ -154,6 +175,11 @@ let drinkState = {
   toppings: ["pearl"],
   recognized: false,
 };
+let stickers = [
+  { title: "早餐燕麦", kcal: 420, x: 8, y: 16, rotate: "-7deg", color: "#8a6a38" },
+  { title: "鸡腿饭", kcal: 610, x: 52, y: 22, rotate: "6deg", color: "#536f45" },
+  { title: "拿铁", kcal: 180, x: 26, y: 58, rotate: "-3deg", color: "#6d4b31" },
+];
 
 function createDetectedFoods() {
   return [
@@ -359,6 +385,71 @@ function renderMealStats() {
   snackShareBar.style.width = `${snackShare}%`;
 }
 
+function renderAdvancedReport() {
+  weeklyNarrative.textContent =
+    "本周共记录 18 餐，日均摄入 1760 kcal。周三摄入最高，主要来自晚餐和奶茶；蛋白质占比偏低，建议下周增加鸡蛋、鱼肉、豆制品。";
+  lowestDay.textContent = "周三";
+  overBudgetDays.textContent = "2 天";
+  streakDays.textContent = "7 天";
+  weekKeywords.textContent = "食堂 / 奶茶 / 蛋白偏低";
+  warningList.innerHTML = [
+    "本周饮料热量明显增加，建议优先选择无糖饮品。",
+    "连续 2 天蛋白质偏低，可以增加鸡蛋、牛奶或豆制品。",
+    "周末摄入高于工作日，建议晚餐选择更清淡的组合。",
+  ]
+    .map((text) => `<div class="warning-item">${text}</div>`)
+    .join("");
+  badgeList.innerHTML = ["记录小能手", "奶茶克制者", "蔬菜守护者", "周报达人"]
+    .map((text) => `<div class="badge-item">${text}</div>`)
+    .join("");
+}
+
+function renderStickers(offsetX = 0, offsetY = 0) {
+  stickerCount.textContent = `${stickers.length} 张`;
+  stickerWall.innerHTML = stickers
+    .map(
+      (item, index) => `
+        <div
+          class="food-sticker"
+          style="
+            left: ${item.x}%;
+            top: ${item.y}%;
+            --rotate: ${item.rotate};
+            --sticker-bg: ${item.color};
+            --tilt-x: ${offsetX * (index + 1) * 0.18}px;
+            --tilt-y: ${offsetY * (index + 1) * 0.18}px;
+          "
+        >
+          ${item.title}
+          <small>${item.kcal} kcal</small>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+function addSticker(title, kcal) {
+  const index = stickers.length;
+  stickers = [
+    ...stickers,
+    {
+      title,
+      kcal,
+      x: 8 + ((index * 23) % 62),
+      y: 12 + ((index * 31) % 56),
+      rotate: `${index % 2 ? 5 : -6}deg`,
+      color: ["#536f45", "#8a6a38", "#6d4b31", "#7b5026"][index % 4],
+    },
+  ];
+  renderStickers();
+}
+
+function addRecord(title, kcal, mealType = selectedMealType) {
+  mealLog[mealType] = (mealLog[mealType] || 0) + kcal;
+  addSticker(title, kcal);
+  renderBudget();
+}
+
 function updateCurrentMealLog() {
   if (!detectedFoods.length) return;
   if (activeRecordMealType && activeRecordMealType !== selectedMealType) {
@@ -543,6 +634,7 @@ function setResult() {
   detectedFoods = createDetectedFoods();
   selectedFoodId = detectedFoods[0].id;
   updateCurrentMealLog();
+  addSticker("餐盘四件套", getTotals().kcal);
   cutoutMask.hidden = true;
   scanLine.hidden = true;
   refreshResultUi();
@@ -572,6 +664,7 @@ function recognizeDrink(type = "milkTea") {
   };
   renderMealTypeOptions();
   renderDrinkModule();
+  addSticker(drinkTypes.find((item) => item.id === type)?.label || "饮料", getDrinkCalories());
 }
 
 drinkInput.addEventListener("change", (event) => {
@@ -731,6 +824,68 @@ drinkSizeOptions.addEventListener("click", handleDrinkOptionClick);
 sugarOptions.addEventListener("click", handleDrinkOptionClick);
 toppingOptions.addEventListener("click", handleDrinkOptionClick);
 
+barcodeButton.addEventListener("click", () => {
+  packageGramInput.value = 45;
+  addRecord("全麦蛋白棒", 176, "snack");
+});
+
+foodSearchButton.addEventListener("click", () => {
+  const name = foodSearchInput.value.trim() || "手动搜索食品";
+  addRecord(name, 260, "snack");
+});
+
+addPackageButton.addEventListener("click", () => {
+  const grams = Number(packageGramInput.value) || 45;
+  const kcal = Math.round((390 / 100) * grams);
+  addRecord("全麦蛋白棒", kcal, "snack");
+});
+
+ocrButton.addEventListener("click", () => {
+  addSticker("营养表 OCR", 196);
+});
+
+saveCustomFoodButton.addEventListener("click", () => {
+  addRecord("OCR 自定义食品", 196, "snack");
+});
+
+document.querySelectorAll("[data-quick]").forEach((button) => {
+  button.addEventListener("click", () => {
+    addRecord(button.dataset.quick, Number(button.dataset.kcal) || 420, "snack");
+  });
+});
+
+function renderContextTip() {
+  const modeCopy = {
+    student: ["控奶茶", "根据你最近记录，这可能是鸡腿饭。约 520-650 kcal，确认一碗米饭后可缩小到 575-610 kcal。"],
+    loss: ["热量缺口", "减脂模式会优先提醒饮料热量、油炸食品和晚餐超预算。"],
+    gain: ["蛋白优先", "增肌模式会关注蛋白质、总热量和训练日补充。"],
+    sugar: ["控糖参考", "控糖模式会标记高糖饮料和精制碳水，仅作日常记录参考。"],
+    light: ["低盐少油", "清淡饮食模式会关注钠、油炸食品和夜宵。"],
+    takeout: ["外卖风险", "外卖模式会提示高油、高盐、高热量组合。"],
+  };
+  const [hint, text] = modeCopy[healthModeInput.value] || modeCopy.student;
+  modeHint.textContent = hint;
+  contextTip.textContent = `${placeInput.value}：${text}`;
+}
+
+healthModeInput.addEventListener("change", renderContextTip);
+placeInput.addEventListener("change", renderContextTip);
+
+motionButton.addEventListener("click", async () => {
+  if (typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) {
+    try {
+      await DeviceOrientationEvent.requestPermission();
+    } catch {
+      renderStickers(10, -8);
+      return;
+    }
+  }
+  window.addEventListener("deviceorientation", (event) => {
+    renderStickers(Number(event.gamma || 0), Number(event.beta || 0));
+  });
+  renderStickers(8, -6);
+});
+
 profileForm.addEventListener("submit", (event) => {
   event.preventDefault();
   renderBudget();
@@ -742,6 +897,9 @@ profileForm.addEventListener("input", renderBudget);
 renderBars();
 renderMealTypeOptions();
 renderMealStats();
+renderAdvancedReport();
+renderContextTip();
+renderStickers();
 renderBudget();
 renderDrinkModule();
 refreshResultUi();
