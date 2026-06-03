@@ -130,12 +130,16 @@ async function handleApi(req, res, pathname) {
     const body = await readJson(req);
 
     if (pathname === "/api/analyze-food-image") {
+      if (!body.image) {
+        return sendJson(res, 400, { error: "No image was provided for food analysis." });
+      }
       const result = await callOpenAI({
         image: body.image,
         system: "You are a nutrition vision assistant. Return strict JSON only. Estimate food items, bounding boxes in percentage coordinates, macros, cooking method, portion, confidence, and calorie ranges. Use ranges, not single-point certainty.",
         userText: "Analyze this meal image. JSON shape: {foods:[{id,name,kcalRange:[min,max],protein,carb,fat,portion,cooking,box:{left,top,width,height}}],summary:{totalKcalRange:[min,max],confidence}}."
       });
-      return sendJson(res, 200, result.mocked ? mockFoodAnalysis() : result);
+      if (result.mocked) return sendJson(res, 200, { ...mockFoodAnalysis(), mocked: true });
+      return sendJson(res, 200, result);
     }
 
     if (pathname === "/api/ocr-nutrition") {
@@ -144,7 +148,8 @@ async function handleApi(req, res, pathname) {
         system: "You extract nutrition facts from Chinese or English package labels. Return strict JSON only. If a value is not visible, use null.",
         userText: "OCR this nutrition facts panel and extract productName, servingSize, perServing, per100g, and extractedText. Fields: energyKcal, protein, fat, carbs, sodiumMg."
       });
-      return sendJson(res, 200, result.mocked ? mockNutritionOcr() : result);
+      if (result.mocked) return sendJson(res, 200, { ...mockNutritionOcr(), mocked: true });
+      return sendJson(res, 200, result);
     }
 
     if (pathname === "/api/barcode-lookup") {
@@ -170,6 +175,15 @@ async function handleApi(req, res, pathname) {
         badges: ["记录小能手", "周报达人"],
         keywords: ["食堂", "奶茶", "蛋白偏低"]
       } : result);
+    }
+
+    if (pathname === "/api/health") {
+      return sendJson(res, 200, {
+        provider: "openai",
+        model: MODEL,
+        hasApiKey: Boolean(OPENAI_API_KEY),
+        mode: OPENAI_API_KEY ? "live" : "mock"
+      });
     }
 
     return sendJson(res, 404, { error: "Unknown API route." });

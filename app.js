@@ -1,4 +1,6 @@
 const foodInput = document.querySelector("#foodInput");
+const navItems = document.querySelectorAll("[data-nav]");
+const viewPanels = document.querySelectorAll("[data-view]");
 const stickerWall = document.querySelector("#stickerWall");
 const stickerCount = document.querySelector("#stickerCount");
 const motionButton = document.querySelector("#motionButton");
@@ -180,6 +182,24 @@ let stickers = [
   { title: "鸡腿饭", kcal: 610, x: 52, y: 22, rotate: "6deg", color: "#536f45" },
   { title: "拿铁", kcal: 180, x: 26, y: 58, rotate: "-3deg", color: "#6d4b31" },
 ];
+
+function setView(view) {
+  viewPanels.forEach((panel) => {
+    panel.classList.toggle("active-view", panel.dataset.view === view);
+  });
+  navItems.forEach((item) => {
+    item.classList.toggle("active", item.dataset.nav === view);
+  });
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(reader.result));
+    reader.addEventListener("error", reject);
+    reader.readAsDataURL(file);
+  });
+}
 
 function createDetectedFoods() {
   return [
@@ -690,8 +710,9 @@ async function analyzeFoodWithAi(image) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ image }),
   });
-  if (!response.ok) throw new Error("AI 食物识别失败");
-  return response.json();
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "AI 食物识别失败");
+  return data;
 }
 
 async function recognizeImage(src) {
@@ -710,15 +731,21 @@ async function recognizeImage(src) {
     scanLine.hidden = true;
     refreshResultUi();
     renderBudget();
-  } catch {
-    window.setTimeout(setResult, 700);
+  } catch (error) {
+    statusPill.textContent = "失败";
+    foodName.textContent = "识别失败";
+    confirmText.textContent = error.message;
+    detectedList.innerHTML = `<div class="detected-empty">没有返回真实识别结果。请检查模型、API Key，或换一张更清晰的图片。</div>`;
+    cutoutMask.hidden = true;
+    scanLine.hidden = true;
   }
 }
 
-foodInput.addEventListener("change", (event) => {
+foodInput.addEventListener("change", async (event) => {
   const [file] = event.target.files;
   if (!file) return;
-  recognizeImage(URL.createObjectURL(file));
+  const image = await fileToDataUrl(file);
+  recognizeImage(image);
 });
 
 function recognizeDrink(type = "milkTea") {
@@ -769,7 +796,11 @@ demoButton.addEventListener("click", () => {
       <path d="M505 526c28-24 72-21 101 4" fill="none" stroke="#f2c950" stroke-width="18" stroke-linecap="round"/>
     </svg>
   `;
-  recognizeImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+  foodPreview.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  foodPreview.hidden = false;
+  emptyCamera.hidden = true;
+  setRecognizing();
+  window.setTimeout(setResult, 700);
 });
 
 drinkDemoButton.addEventListener("click", () => {
@@ -959,6 +990,12 @@ function renderContextTip() {
 healthModeInput.addEventListener("change", renderContextTip);
 placeInput.addEventListener("change", renderContextTip);
 
+navItems.forEach((item) => {
+  item.addEventListener("click", () => {
+    setView(item.dataset.nav);
+  });
+});
+
 motionButton.addEventListener("click", async () => {
   if (typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) {
     try {
@@ -992,3 +1029,4 @@ renderStickers();
 renderBudget();
 renderDrinkModule();
 refreshResultUi();
+setView("home");

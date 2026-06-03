@@ -19,7 +19,7 @@
           </button>
         </header>
 
-        <section class="sticker-panel" aria-label="饮食照片贴纸墙">
+        <section class="sticker-panel view-panel" data-view="home" aria-label="饮食照片贴纸墙">
           <div class="section-title">
             <div>
               <p class="eyebrow">照片日记</p>
@@ -31,7 +31,7 @@
           <button class="secondary-action motion-button" id="motionButton" type="button">开启重力贴纸</button>
         </section>
 
-        <section class="budget-panel" aria-label="每日热量预算">
+        <section class="budget-panel view-panel" data-view="home" aria-label="每日热量预算">
           <div class="section-title">
             <div>
               <p class="eyebrow">每日热量预算</p>
@@ -101,7 +101,7 @@
           </details>
         </section>
 
-        <section class="smart-tools-panel" aria-label="包装食品与营养识别">
+        <section class="smart-tools-panel view-panel" data-view="tools" aria-label="包装食品与营养识别">
           <div class="section-title">
             <div>
               <p class="eyebrow">包装食品</p>
@@ -146,7 +146,7 @@
           </div>
         </section>
 
-        <section class="camera-panel" aria-label="拍照识别食物">
+        <section class="camera-panel view-panel" data-view="scan" aria-label="拍照识别食物">
           <div class="camera-stage" id="cameraStage">
             <img id="foodPreview" alt="" hidden />
             <div class="cutout-mask" id="cutoutMask" hidden></div>
@@ -171,7 +171,7 @@
           </div>
         </section>
 
-        <section class="result-panel" aria-live="polite">
+        <section class="result-panel view-panel" data-view="scan" aria-live="polite">
           <div class="result-heading">
             <div>
               <p class="eyebrow">AI 初步识别</p>
@@ -208,7 +208,7 @@
           </div>
         </section>
 
-        <section class="manual-panel" aria-label="手动添加与常用食物">
+        <section class="manual-panel view-panel" data-view="tools" aria-label="手动添加与常用食物">
           <div class="section-title">
             <div>
               <p class="eyebrow">手动补救</p>
@@ -224,7 +224,7 @@
           </div>
         </section>
 
-        <section class="context-panel" aria-label="健康目标与地点推荐">
+        <section class="context-panel view-panel" data-view="home" aria-label="健康目标与地点推荐">
           <div class="section-title">
             <div>
               <p class="eyebrow">学生党模式</p>
@@ -259,7 +259,7 @@
           <p class="context-tip" id="contextTip">根据你最近记录，这可能是鸡腿饭。约 520-650 kcal，确认一碗米饭后可缩小到 575-610 kcal。</p>
         </section>
 
-        <section class="drink-panel" aria-label="饮料识别模块">
+        <section class="drink-panel view-panel" data-view="scan" aria-label="饮料识别模块">
           <div class="section-title">
             <div>
               <p class="eyebrow">独立饮料识别</p>
@@ -303,7 +303,7 @@
           </div>
         </section>
 
-        <section class="weekly-panel" aria-label="每周热量统计">
+        <section class="weekly-panel view-panel" data-view="report" aria-label="每周热量统计">
           <div class="section-title">
             <h2>饮食周报</h2>
             <span id="weeklyTotal">10,820 kcal</span>
@@ -366,17 +366,21 @@
         </section>
 
         <nav class="bottom-nav" aria-label="底部导航">
-          <button class="nav-item active" type="button">
+          <button class="nav-item active" type="button" data-nav="home">
             <span aria-hidden="true">⌂</span>
-            记录
+            首页
           </button>
-          <button class="nav-item" type="button">
-            <span aria-hidden="true">◧</span>
-            统计
-          </button>
-          <button class="nav-item" type="button">
+          <button class="nav-item" type="button" data-nav="scan">
             <span aria-hidden="true">◎</span>
-            我的
+            识别
+          </button>
+          <button class="nav-item" type="button" data-nav="tools">
+            <span aria-hidden="true">⌕</span>
+            工具
+          </button>
+          <button class="nav-item" type="button" data-nav="report">
+            <span aria-hidden="true">◧</span>
+            周报
           </button>
         </nav>
       </section>
