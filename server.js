@@ -28,10 +28,12 @@ await loadLocalEnv();
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const AI_PROVIDER = process.env.AI_PROVIDER || "openai";
+const AI_PROVIDER = process.env.AI_PROVIDER || "deepseek";
 const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+const DEEPSEEK_VISION_MODEL = process.env.DEEPSEEK_VISION_MODEL || "deepseek-v4-flash";
 const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
+const DEEPSEEK_VISION_BASE_URL = process.env.DEEPSEEK_VISION_BASE_URL || DEEPSEEK_BASE_URL;
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -136,6 +138,44 @@ async function callDeepSeekJson({ system, userText }) {
   return JSON.parse(data.choices?.[0]?.message?.content || "{}");
 }
 
+async function callDeepSeekVision({ system, userText, image }) {
+  if (!DEEPSEEK_API_KEY) {
+    throw new Error("缺少 DEEPSEEK_API_KEY，无法调用 DeepSeek 识别接口。");
+  }
+
+  const response = await fetch(`${DEEPSEEK_VISION_BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: DEEPSEEK_VISION_MODEL,
+      messages: [
+        { role: "system", content: `${system}\nReturn strict JSON only.` },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userText },
+            { type: "image_url", image_url: { url: image } },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+      stream: false,
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(
+      data.error?.message ||
+        "DeepSeek 图片识别请求失败。官方 DeepSeek API 可能尚未开放图片输入；如使用自部署 DeepSeek-VL，请设置 DEEPSEEK_VISION_BASE_URL 和 DEEPSEEK_VISION_MODEL。",
+    );
+  }
+  return extractJson(data.choices?.[0]?.message?.content || "{}");
+}
+
 function callTextJson(payload) {
   return AI_PROVIDER === "deepseek" ? callDeepSeekJson(payload) : callOpenAI(payload);
 }
@@ -171,9 +211,15 @@ async function handleApi(req, res, pathname) {
 
     if (pathname === "/api/analyze-food-image") {
       if (AI_PROVIDER === "deepseek") {
-        return sendJson(res, 400, {
-          error: "DeepSeek 当前接口不支持直接图片识别。请用 OpenAI 视觉模型做拍照识别，DeepSeek 可用于周报和文本建议。"
+        if (!body.image) {
+          return sendJson(res, 400, { error: "No image was provided for food analysis." });
+        }
+        const result = await callDeepSeekVision({
+          image: body.image,
+          system: "You are a nutrition vision assistant. Return strict JSON only. Estimate food items, bounding boxes in percentage coordinates, macros, cooking method, portion, confidence, and calorie ranges. Use ranges, not single-point certainty.",
+          userText: "Analyze this meal image. JSON shape: {foods:[{id,name,kcalRange:[min,max],protein,carb,fat,portion,cooking,box:{left,top,width,height}}],summary:{totalKcalRange:[min,max],confidence}}."
         });
+        return sendJson(res, 200, result);
       }
       if (!OPENAI_API_KEY) {
         return sendJson(res, 503, {
@@ -241,9 +287,10 @@ function getHealthPayload() {
   return {
     provider: AI_PROVIDER,
     model: AI_PROVIDER === "deepseek" ? DEEPSEEK_MODEL : MODEL,
+    visionModel: AI_PROVIDER === "deepseek" ? DEEPSEEK_VISION_MODEL : MODEL,
     hasApiKey: Boolean(activeKey),
     mode: activeKey ? "live" : "mock",
-    visionReady: AI_PROVIDER === "openai" && Boolean(OPENAI_API_KEY),
+    visionReady: Boolean(activeKey),
   };
 }
 

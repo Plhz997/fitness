@@ -1018,7 +1018,7 @@ async function checkAiHealth() {
     aiStatusPill.classList.toggle("live", health.mode === "live");
     aiStatusText.textContent =
       health.provider === "deepseek"
-        ? "DeepSeek 已用于文本建议。照片识别需要 OpenAI 视觉模型，请把 AI_PROVIDER 设为 openai。"
+        ? `当前使用 DeepSeek：${health.visionModel || health.model}。上传照片后会请求 DeepSeek 图片识别接口；如果官方接口拒绝图片，页面会显示真实错误。`
         : `当前使用 ${health.model}。${health.mode === "live" ? "已检测到密钥，上传照片后会请求真实视觉模型。" : "未检测到 OPENAI_API_KEY，拍照识别会进入演示/失败提示。"}`;
   } catch {
     aiStatusPill.textContent = "未连接";

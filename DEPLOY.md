@@ -25,9 +25,12 @@ Do not open `index.html` with `file://` for AI features. The frontend must call 
    https://render.com/deploy?repo=https://github.com/Plhz997/fitness
 2. Connect the GitHub repository.
 3. Set environment variables:
-   - `OPENAI_API_KEY`
-   - `OPENAI_MODEL=gpt-5-mini`
-   - `AI_PROVIDER=openai`
+   - `AI_PROVIDER=deepseek`
+   - `DEEPSEEK_API_KEY`
+   - `DEEPSEEK_MODEL=deepseek-chat`
+   - `DEEPSEEK_VISION_MODEL=deepseek-v4-flash`
+   - `DEEPSEEK_BASE_URL=https://api.deepseek.com`
+   - `DEEPSEEK_VISION_BASE_URL=https://api.deepseek.com`
 4. Deploy the web service.
 
 Render will run:
@@ -47,29 +50,32 @@ After deployment, open:
 https://your-render-url.onrender.com/api/health
 ```
 
-Expected JSON:
+Expected JSON should look like:
 
 ```json
 {
-  "provider": "openai",
-  "model": "gpt-5-mini",
+  "provider": "deepseek",
+  "model": "deepseek-chat",
+  "visionModel": "deepseek-v4-flash",
   "hasApiKey": true,
   "mode": "live",
   "visionReady": true
 }
 ```
 
-This confirms the key is configured. The final proof is uploading a real food photo in the app. If the API key is invalid or expired, the app will show the real provider error instead of returning fake food results.
+This confirms the key is configured. The final proof is uploading a real food photo in the app. If the API key is invalid, expired, or the selected DeepSeek endpoint does not accept image input, the app will show the real provider error instead of returning fake food results.
 
-## DeepSeek
+## DeepSeek Notes
 
-You can use DeepSeek for text-only features such as weekly reports and nutrition advice:
+The app is now configured to use DeepSeek by default:
 
 ```bash
 AI_PROVIDER=deepseek
 DEEPSEEK_API_KEY=your_key
 DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_VISION_MODEL=deepseek-v4-flash
 DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_VISION_BASE_URL=https://api.deepseek.com
 ```
 
-Photo food recognition still needs a vision model. If `AI_PROVIDER=deepseek`, `/api/analyze-food-image` will return a clear error instead of fake default food data.
+DeepSeek's public API may reject image input depending on your account and model access. If you use a compatible hosted or self-deployed DeepSeek-VL endpoint, set `DEEPSEEK_VISION_BASE_URL` and `DEEPSEEK_VISION_MODEL` to that endpoint/model.
