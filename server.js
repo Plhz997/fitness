@@ -26,7 +26,7 @@ async function loadLocalEnv() {
 
 await loadLocalEnv();
 
-const MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+const MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 const mimeTypes = {
