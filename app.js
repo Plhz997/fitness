@@ -37,6 +37,7 @@ const mealTypeOptions = document.querySelector("#mealTypeOptions");
 const statusPill = document.querySelector("#statusPill");
 const foodName = document.querySelector("#foodName");
 const dailyBudget = document.querySelector("#dailyBudget");
+const profileBudget = document.querySelector("#profileBudget");
 const budgetFill = document.querySelector("#budgetFill");
 const breakfastKcal = document.querySelector("#breakfastKcal");
 const lunchKcal = document.querySelector("#lunchKcal");
@@ -74,6 +75,7 @@ const streakDays = document.querySelector("#streakDays");
 const weekKeywords = document.querySelector("#weekKeywords");
 const warningList = document.querySelector("#warningList");
 const badgeList = document.querySelector("#badgeList");
+const profileBadgeList = document.querySelector("#profileBadgeList");
 const timerPhase = document.querySelector("#timerPhase");
 const timerRound = document.querySelector("#timerRound");
 const timerTime = document.querySelector("#timerTime");
@@ -535,6 +537,7 @@ function renderBudget() {
   const progress = Math.min(100, Math.max(0, (consumed / budget) * 100));
 
   dailyBudget.textContent = budget.toLocaleString("zh-CN");
+  profileBudget.textContent = budget.toLocaleString("zh-CN");
   breakfastKcal.textContent = mealLog.breakfast.toLocaleString("zh-CN");
   lunchKcal.textContent = mealLog.lunch.toLocaleString("zh-CN");
   remainingBudget.textContent = remaining.toLocaleString("zh-CN");
@@ -584,6 +587,7 @@ function renderAdvancedReport() {
   badgeList.innerHTML = ["记录小能手", "奶茶克制者", "蔬菜守护者", "周报达人"]
     .map((text) => `<div class="badge-item">${text}</div>`)
     .join("");
+  profileBadgeList.innerHTML = badgeList.innerHTML;
 }
 
 async function refreshAiWeeklyReport() {
@@ -600,6 +604,7 @@ async function refreshAiWeeklyReport() {
     }
     if (report.badges?.length) {
       badgeList.innerHTML = report.badges.map((text) => `<div class="badge-item">${text}</div>`).join("");
+      profileBadgeList.innerHTML = badgeList.innerHTML;
     }
     if (report.keywords?.length) {
       weekKeywords.textContent = report.keywords.join(" / ");

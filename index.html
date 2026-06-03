@@ -71,49 +71,6 @@
               <strong><span id="remainingBudget">620</span> kcal</strong>
             </div>
           </div>
-          <details class="profile-panel">
-            <summary>首次使用资料设置</summary>
-            <form class="profile-form" id="profileForm">
-              <label>
-                <span>身高 cm</span>
-                <input id="heightInput" type="number" min="120" max="230" value="170" />
-              </label>
-              <label>
-                <span>体重 kg</span>
-                <input id="weightInput" type="number" min="35" max="220" value="62" />
-              </label>
-              <label>
-                <span>年龄</span>
-                <input id="ageInput" type="number" min="12" max="90" value="30" />
-              </label>
-              <label>
-                <span>性别</span>
-                <select id="genderInput">
-                  <option value="female">女</option>
-                  <option value="male" selected>男</option>
-                </select>
-              </label>
-              <label>
-                <span>目标</span>
-                <select id="goalInput">
-                  <option value="loss" selected>减脂</option>
-                  <option value="maintain">维持</option>
-                  <option value="gain">增肌</option>
-                  <option value="record">健康记录</option>
-                </select>
-              </label>
-              <label>
-                <span>活动水平</span>
-                <select id="activityInput">
-                  <option value="sedentary">久坐</option>
-                  <option value="light" selected>轻度运动</option>
-                  <option value="moderate">中度运动</option>
-                  <option value="high">高强度运动</option>
-                </select>
-              </label>
-              <button class="primary-action profile-submit" type="submit">生成预算</button>
-            </form>
-          </details>
         </section>
 
         <section class="smart-tools-panel view-panel" data-view="tools" aria-label="包装食品与营养识别">
@@ -239,7 +196,73 @@
           </div>
         </section>
 
-        <section class="context-panel view-panel" data-view="home" aria-label="健康目标与地点推荐">
+        <section class="profile-panel-main view-panel" data-view="profile" aria-label="个人主页">
+          <div class="profile-hero">
+            <div class="profile-avatar">7</div>
+            <div>
+              <p class="eyebrow">个人主页</p>
+              <h2>第 7 天连续记录</h2>
+              <span>260 XP · 学生党模式</span>
+            </div>
+          </div>
+          <div class="profile-stats">
+            <div><small>今日预算</small><strong><span id="profileBudget">1800</span></strong></div>
+            <div><small>连续记录</small><strong>7 天</strong></div>
+            <div><small>徽章</small><strong>4 枚</strong></div>
+          </div>
+        </section>
+
+        <section class="profile-settings-panel view-panel" data-view="profile" aria-label="身体资料与预算设置">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">预算设置</p>
+              <h2>身体资料</h2>
+            </div>
+            <span>可随时修改</span>
+          </div>
+          <form class="profile-form" id="profileForm">
+            <label>
+              <span>身高 cm</span>
+              <input id="heightInput" type="number" min="120" max="230" value="170" />
+            </label>
+            <label>
+              <span>体重 kg</span>
+              <input id="weightInput" type="number" min="35" max="220" value="62" />
+            </label>
+            <label>
+              <span>年龄</span>
+              <input id="ageInput" type="number" min="12" max="90" value="30" />
+            </label>
+            <label>
+              <span>性别</span>
+              <select id="genderInput">
+                <option value="female">女</option>
+                <option value="male" selected>男</option>
+              </select>
+            </label>
+            <label>
+              <span>目标</span>
+              <select id="goalInput">
+                <option value="loss" selected>减脂</option>
+                <option value="maintain">维持</option>
+                <option value="gain">增肌</option>
+                <option value="record">健康记录</option>
+              </select>
+            </label>
+            <label>
+              <span>活动水平</span>
+              <select id="activityInput">
+                <option value="sedentary">久坐</option>
+                <option value="light" selected>轻度运动</option>
+                <option value="moderate">中度运动</option>
+                <option value="high">高强度运动</option>
+              </select>
+            </label>
+            <button class="primary-action profile-submit" type="submit">生成预算</button>
+          </form>
+        </section>
+
+        <section class="context-panel view-panel" data-view="profile" aria-label="健康目标与地点推荐">
           <div class="section-title">
             <div>
               <p class="eyebrow">学生党模式</p>
@@ -272,6 +295,17 @@
             </label>
           </div>
           <p class="context-tip" id="contextTip">根据你最近记录，这可能是鸡腿饭。约 520-650 kcal，确认一碗米饭后可缩小到 575-610 kcal。</p>
+        </section>
+
+        <section class="profile-badges-panel view-panel" data-view="profile" aria-label="我的徽章">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">成就系统</p>
+              <h2>我的徽章</h2>
+            </div>
+            <span>4 枚</span>
+          </div>
+          <div class="badge-list" id="profileBadgeList" aria-label="个人徽章"></div>
         </section>
 
         <section class="drink-panel view-panel" data-view="scan" aria-label="饮料识别模块">
@@ -402,7 +436,7 @@
             <div><small>本周关键词</small><strong id="weekKeywords">食堂 / 奶茶 / 蛋白偏低</strong></div>
           </div>
           <div class="warning-list" id="warningList" aria-label="饮食趋势预警"></div>
-          <div class="badge-list" id="badgeList" aria-label="饮食成就"></div>
+          <div class="warning-list" id="badgeList" aria-label="周报建议"></div>
         </section>
 
         <nav class="bottom-nav" aria-label="底部导航">
@@ -421,6 +455,10 @@
           <button class="nav-item" type="button" data-nav="timer">
             <span aria-hidden="true">▶</span>
             训练
+          </button>
+          <button class="nav-item" type="button" data-nav="profile">
+            <span aria-hidden="true">◉</span>
+            我的
           </button>
           <button class="nav-item" type="button" data-nav="report">
             <span aria-hidden="true">◧</span>
