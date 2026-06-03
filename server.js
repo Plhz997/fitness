@@ -28,6 +28,10 @@ await loadLocalEnv();
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const AI_PROVIDER = process.env.AI_PROVIDER || "openai";
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -100,6 +104,39 @@ async function callOpenAI({ system, userText, image }) {
   return extractJson(outputText);
 }
 
+async function callDeepSeekJson({ system, userText }) {
+  if (!DEEPSEEK_API_KEY) {
+    return { mocked: true };
+  }
+
+  const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: DEEPSEEK_MODEL,
+      messages: [
+        { role: "system", content: `${system}\nReturn strict JSON only.` },
+        { role: "user", content: userText },
+      ],
+      response_format: { type: "json_object" },
+      stream: false,
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.message || "DeepSeek API request failed.");
+  }
+  return JSON.parse(data.choices?.[0]?.message?.content || "{}");
+}
+
+function callTextJson(payload) {
+  return AI_PROVIDER === "deepseek" ? callDeepSeekJson(payload) : callOpenAI(payload);
+}
+
 function mockFoodAnalysis() {
   return {
     foods: [
@@ -130,6 +167,11 @@ async function handleApi(req, res, pathname) {
     const body = await readJson(req);
 
     if (pathname === "/api/analyze-food-image") {
+      if (AI_PROVIDER === "deepseek") {
+        return sendJson(res, 400, {
+          error: "DeepSeek 当前接口不支持直接图片识别。请用 OpenAI 视觉模型做拍照识别，DeepSeek 可用于周报和文本建议。"
+        });
+      }
       if (!body.image) {
         return sendJson(res, 400, { error: "No image was provided for food analysis." });
       }
@@ -143,7 +185,7 @@ async function handleApi(req, res, pathname) {
     }
 
     if (pathname === "/api/ocr-nutrition") {
-      const result = await callOpenAI({
+      const result = await callTextJson({
         image: body.image,
         system: "You extract nutrition facts from Chinese or English package labels. Return strict JSON only. If a value is not visible, use null.",
         userText: "OCR this nutrition facts panel and extract productName, servingSize, perServing, per100g, and extractedText. Fields: energyKcal, protein, fat, carbs, sodiumMg."
@@ -165,7 +207,7 @@ async function handleApi(req, res, pathname) {
     }
 
     if (pathname === "/api/weekly-report") {
-      const result = await callOpenAI({
+      const result = await callTextJson({
         system: "You are a nutrition coach for a student calorie-tracking app. Return strict JSON only.",
         userText: `Generate a weekly report JSON from these records: ${JSON.stringify(body.records || [])}. Shape: {summary, warnings:[], badges:[], keywords:[]}.`
       });
@@ -179,10 +221,10 @@ async function handleApi(req, res, pathname) {
 
     if (pathname === "/api/health") {
       return sendJson(res, 200, {
-        provider: "openai",
-        model: MODEL,
-        hasApiKey: Boolean(OPENAI_API_KEY),
-        mode: OPENAI_API_KEY ? "live" : "mock"
+        provider: AI_PROVIDER,
+        model: AI_PROVIDER === "deepseek" ? DEEPSEEK_MODEL : MODEL,
+        hasApiKey: AI_PROVIDER === "deepseek" ? Boolean(DEEPSEEK_API_KEY) : Boolean(OPENAI_API_KEY),
+        mode: (AI_PROVIDER === "deepseek" ? DEEPSEEK_API_KEY : OPENAI_API_KEY) ? "live" : "mock"
       });
     }
 

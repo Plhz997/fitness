@@ -124,6 +124,7 @@ h2 {
 .result-panel,
 .smart-tools-panel,
 .sticker-panel,
+.timer-panel,
 .weekly-panel {
   position: relative;
   z-index: 1;
@@ -520,6 +521,7 @@ h2 {
 .result-panel,
 .smart-tools-panel,
 .sticker-panel,
+.timer-panel,
 .weekly-panel {
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -569,6 +571,13 @@ h2 {
   display: block;
   margin-top: 3px;
   font-size: 11px;
+}
+
+.food-sticker img {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 10px rgba(38, 50, 56, 0.16));
 }
 
 .motion-button {
@@ -1189,7 +1198,7 @@ h2 {
   bottom: 18px;
   left: 18px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
   padding: 8px;
   border: 1px solid var(--line);
@@ -1208,7 +1217,7 @@ h2 {
   gap: 2px;
   place-items: center;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -1262,6 +1271,11 @@ h2 {
   #sugarOptions,
   .topping-options {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .timer-settings,
+  .timer-actions {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1354,4 +1368,60 @@ h2 {
 .bottom-nav {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.92);
+}
+
+.timer-display {
+  display: grid;
+  place-items: center;
+  min-height: 210px;
+  border-radius: 28px;
+  background: linear-gradient(145deg, #1cb0f6, #58cc02);
+  color: white;
+  margin-top: 14px;
+  text-align: center;
+  padding: 18px;
+}
+
+.timer-display small,
+.timer-display p {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.timer-display strong {
+  display: block;
+  font-size: 76px;
+  line-height: 1;
+}
+
+.timer-settings {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.timer-settings label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.timer-settings input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f8fbff;
+  color: var(--ink);
+  padding: 0 10px;
+  font-weight: 900;
+}
+
+.timer-actions {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 0.7fr;
+  gap: 8px;
+  margin-top: 12px;
 }

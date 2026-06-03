@@ -74,6 +74,20 @@ const streakDays = document.querySelector("#streakDays");
 const weekKeywords = document.querySelector("#weekKeywords");
 const warningList = document.querySelector("#warningList");
 const badgeList = document.querySelector("#badgeList");
+const timerPhase = document.querySelector("#timerPhase");
+const timerRound = document.querySelector("#timerRound");
+const timerTime = document.querySelector("#timerTime");
+const timerHint = document.querySelector("#timerHint");
+const timerSets = document.querySelector("#timerSets");
+const timerWork = document.querySelector("#timerWork");
+const timerRest = document.querySelector("#timerRest");
+const timerStart = document.querySelector("#timerStart");
+const timerPause = document.querySelector("#timerPause");
+const timerReset = document.querySelector("#timerReset");
+const stickerSources = [
+  "assets/food-icons-dessert.jpeg",
+  "assets/food-icons-meal.jpeg",
+];
 
 const portionOptions = [
   { label: "半碗", value: 0.5 },
@@ -178,10 +192,69 @@ let drinkState = {
   recognized: false,
 };
 let stickers = [
-  { title: "早餐燕麦", kcal: 420, x: 8, y: 16, rotate: "-7deg", color: "#8a6a38" },
-  { title: "鸡腿饭", kcal: 610, x: 52, y: 22, rotate: "6deg", color: "#536f45" },
-  { title: "拿铁", kcal: 180, x: 26, y: 58, rotate: "-3deg", color: "#6d4b31" },
+  { title: "早餐燕麦", kcal: 420, x: 8, y: 16, rotate: "-7deg", color: "#8a6a38", icon: null },
+  { title: "鸡腿饭", kcal: 610, x: 52, y: 22, rotate: "6deg", color: "#536f45", icon: null },
+  { title: "拿铁", kcal: 180, x: 26, y: 58, rotate: "-3deg", color: "#6d4b31", icon: null },
 ];
+let timerState = {
+  running: false,
+  phase: "ready",
+  round: 1,
+  remaining: 30,
+  interval: null,
+};
+let stickerIcons = [];
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", reject);
+    image.src = src;
+  });
+}
+
+function cutStickerIcon(image, col, row) {
+  const sourceWidth = image.naturalWidth / 3;
+  const sourceHeight = image.naturalHeight / 4;
+  const canvas = document.createElement("canvas");
+  const size = 220;
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext("2d");
+  context.drawImage(image, col * sourceWidth, row * sourceHeight, sourceWidth, sourceHeight, 0, 0, size, size);
+  const imageData = context.getImageData(0, 0, size, size);
+  const pixels = imageData.data;
+  for (let index = 0; index < pixels.length; index += 4) {
+    const red = pixels[index];
+    const green = pixels[index + 1];
+    const blue = pixels[index + 2];
+    if (blue > 70 && red < 45 && green < 95) {
+      pixels[index + 3] = 0;
+    }
+  }
+  context.putImageData(imageData, 0, 0);
+  return canvas.toDataURL("image/png");
+}
+
+async function prepareStickerIcons() {
+  try {
+    const images = await Promise.all(stickerSources.map(loadImage));
+    stickerIcons = images.flatMap((image) => {
+      const icons = [];
+      for (let row = 0; row < 4; row += 1) {
+        for (let col = 0; col < 3; col += 1) {
+          icons.push(cutStickerIcon(image, col, row));
+        }
+      }
+      return icons;
+    });
+    stickers = stickers.map((sticker, index) => ({ ...sticker, icon: stickerIcons[index] }));
+    renderStickers();
+  } catch {
+    stickerIcons = [];
+  }
+}
 
 function setView(view) {
   viewPanels.forEach((panel) => {
@@ -190,6 +263,100 @@ function setView(view) {
   navItems.forEach((item) => {
     item.classList.toggle("active", item.dataset.nav === view);
   });
+}
+
+function beep(frequency = 880, duration = 130) {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  const context = new AudioContext();
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.frequency.value = frequency;
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start();
+  gain.gain.setValueAtTime(0.0001, context.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration / 1000);
+  oscillator.stop(context.currentTime + duration / 1000);
+}
+
+function renderTimer() {
+  const total = Number(timerSets.value) || 4;
+  timerRound.textContent = `第 ${timerState.round} / ${total} 组`;
+  timerTime.textContent = timerState.remaining;
+  const label = {
+    ready: "待开始",
+    countdown: "准备",
+    work: "运动",
+    rest: "休息",
+    done: "完成",
+  }[timerState.phase];
+  timerPhase.textContent = label;
+}
+
+function stopTimer() {
+  window.clearInterval(timerState.interval);
+  timerState.interval = null;
+  timerState.running = false;
+}
+
+function startPhase(phase, seconds) {
+  timerState.phase = phase;
+  timerState.remaining = seconds;
+  renderTimer();
+}
+
+function startCountdown() {
+  startPhase("countdown", 3);
+  beep(740);
+}
+
+function tickTimer() {
+  if (timerState.remaining > 1) {
+    timerState.remaining -= 1;
+    if (timerState.phase === "countdown") beep(timerState.remaining === 1 ? 980 : 740);
+    renderTimer();
+    return;
+  }
+
+  const total = Number(timerSets.value) || 4;
+  const work = Number(timerWork.value) || 30;
+  const rest = Number(timerRest.value) || 15;
+
+  if (timerState.phase === "countdown") {
+    beep(1120, 220);
+    startPhase("work", work);
+    timerHint.textContent = "开始运动，跟着提示走，歌单继续你自己掌控。";
+    return;
+  }
+
+  if (timerState.phase === "work") {
+    if (rest > 0) {
+      beep(520, 180);
+      startPhase("rest", rest);
+      timerHint.textContent = "休息一下，下一组开始前会有 3 秒提示音。";
+    } else if (timerState.round < total) {
+      timerState.round += 1;
+      startCountdown();
+    } else {
+      stopTimer();
+      startPhase("done", 0);
+      timerHint.textContent = "训练完成，今天的节奏拿下了。";
+    }
+    return;
+  }
+
+  if (timerState.phase === "rest") {
+    if (timerState.round < total) {
+      timerState.round += 1;
+      startCountdown();
+    } else {
+      stopTimer();
+      startPhase("done", 0);
+      timerHint.textContent = "训练完成，音乐还在，你也还在。";
+    }
+  }
 }
 
 function fileToDataUrl(file) {
@@ -463,7 +630,7 @@ function renderStickers(offsetX = 0, offsetY = 0) {
             --tilt-y: ${offsetY * (index + 1) * 0.18}px;
           "
         >
-          ${item.title}
+          ${item.icon ? `<img src="${item.icon}" alt="" />` : item.title}
           <small>${item.kcal} kcal</small>
         </div>
       `,
@@ -482,6 +649,7 @@ function addSticker(title, kcal) {
       y: 12 + ((index * 31) % 56),
       rotate: `${index % 2 ? 5 : -6}deg`,
       color: ["#536f45", "#8a6a38", "#6d4b31", "#7b5026"][index % 4],
+      icon: stickerIcons[index % stickerIcons.length] || null,
     },
   ];
   renderStickers();
@@ -1011,6 +1179,39 @@ motionButton.addEventListener("click", async () => {
   renderStickers(8, -6);
 });
 
+timerStart.addEventListener("click", () => {
+  if (timerState.running) return;
+  timerState.running = true;
+  if (timerState.phase === "ready" || timerState.phase === "done") {
+    timerState.round = 1;
+    startCountdown();
+  }
+  timerState.interval = window.setInterval(tickTimer, 1000);
+});
+
+timerPause.addEventListener("click", () => {
+  stopTimer();
+  timerHint.textContent = "已暂停，音乐不用停，准备好再继续。";
+});
+
+timerReset.addEventListener("click", () => {
+  stopTimer();
+  timerState.phase = "ready";
+  timerState.round = 1;
+  timerState.remaining = Number(timerWork.value) || 30;
+  timerHint.textContent = "音乐继续由你控制，我只负责清晰提示节奏。";
+  renderTimer();
+});
+
+[timerSets, timerWork, timerRest].forEach((input) => {
+  input.addEventListener("input", () => {
+    if (!timerState.running && timerState.phase === "ready") {
+      timerState.remaining = Number(timerWork.value) || 30;
+      renderTimer();
+    }
+  });
+});
+
 profileForm.addEventListener("submit", (event) => {
   event.preventDefault();
   renderBudget();
@@ -1030,3 +1231,5 @@ renderBudget();
 renderDrinkModule();
 refreshResultUi();
 setView("home");
+prepareStickerIcons();
+renderTimer();
