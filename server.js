@@ -28,12 +28,12 @@ await loadLocalEnv();
 
 const MODEL = process.env.OPENAI_MODEL || "gpt-5-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const AI_PROVIDER = process.env.AI_PROVIDER || "deepseek";
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
-const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
-const DEEPSEEK_VISION_MODEL = process.env.DEEPSEEK_VISION_MODEL || "deepseek-v4-flash";
-const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
-const DEEPSEEK_VISION_BASE_URL = process.env.DEEPSEEK_VISION_BASE_URL || DEEPSEEK_BASE_URL;
+const AI_PROVIDER = process.env.AI_PROVIDER || "qwen";
+const QWEN_API_KEY = process.env.QWEN_API_KEY || process.env.DASHSCOPE_API_KEY;
+const QWEN_MODEL = process.env.QWEN_MODEL || "qwen-plus";
+const QWEN_VISION_MODEL = process.env.QWEN_VISION_MODEL || "qwen3-vl-plus";
+const QWEN_BASE_URL = process.env.QWEN_BASE_URL || "https://dashscope.aliyuncs.com/compatible-mode/v1";
+const QWEN_VISION_BASE_URL = process.env.QWEN_VISION_BASE_URL || QWEN_BASE_URL;
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -109,19 +109,19 @@ async function callOpenAI({ system, userText, image }) {
   return extractJson(outputText);
 }
 
-async function callDeepSeekJson({ system, userText }) {
-  if (!DEEPSEEK_API_KEY) {
+async function callQwenJson({ system, userText }) {
+  if (!QWEN_API_KEY) {
     return { mocked: true };
   }
 
-  const response = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
+  const response = await fetch(`${QWEN_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+      Authorization: `Bearer ${QWEN_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: DEEPSEEK_MODEL,
+      model: QWEN_MODEL,
       messages: [
         { role: "system", content: `${system}\nReturn strict JSON only.` },
         { role: "user", content: userText },
@@ -133,24 +133,24 @@ async function callDeepSeekJson({ system, userText }) {
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.error?.message || "DeepSeek API request failed.");
+    throw new Error(data.error?.message || "Qwen API request failed.");
   }
-  return JSON.parse(data.choices?.[0]?.message?.content || "{}");
+  return extractJson(data.choices?.[0]?.message?.content || "{}");
 }
 
-async function callDeepSeekVision({ system, userText, image }) {
-  if (!DEEPSEEK_API_KEY) {
-    throw new Error("缺少 DEEPSEEK_API_KEY，无法调用 DeepSeek 识别接口。");
+async function callQwenVision({ system, userText, image }) {
+  if (!QWEN_API_KEY) {
+    throw new Error("缺少 QWEN_API_KEY 或 DASHSCOPE_API_KEY，无法调用通义千问视觉识别接口。");
   }
 
-  const response = await fetch(`${DEEPSEEK_VISION_BASE_URL}/chat/completions`, {
+  const response = await fetch(`${QWEN_VISION_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+      Authorization: `Bearer ${QWEN_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: DEEPSEEK_VISION_MODEL,
+      model: QWEN_VISION_MODEL,
       messages: [
         { role: "system", content: `${system}\nReturn strict JSON only.` },
         {
@@ -170,14 +170,14 @@ async function callDeepSeekVision({ system, userText, image }) {
   if (!response.ok) {
     throw new Error(
       data.error?.message ||
-        "DeepSeek 图片识别请求失败。官方 DeepSeek API 可能尚未开放图片输入；如使用自部署 DeepSeek-VL，请设置 DEEPSEEK_VISION_BASE_URL 和 DEEPSEEK_VISION_MODEL。",
+        "通义千问图片识别请求失败。请检查 QWEN_API_KEY、QWEN_VISION_MODEL 和 QWEN_VISION_BASE_URL。",
     );
   }
   return extractJson(data.choices?.[0]?.message?.content || "{}");
 }
 
 function callTextJson(payload) {
-  return AI_PROVIDER === "deepseek" ? callDeepSeekJson(payload) : callOpenAI(payload);
+  return AI_PROVIDER === "qwen" ? callQwenJson(payload) : callOpenAI(payload);
 }
 
 function mockFoodAnalysis() {
@@ -210,11 +210,11 @@ async function handleApi(req, res, pathname) {
     const body = await readJson(req);
 
     if (pathname === "/api/analyze-food-image") {
-      if (AI_PROVIDER === "deepseek") {
+      if (AI_PROVIDER === "qwen") {
         if (!body.image) {
           return sendJson(res, 400, { error: "No image was provided for food analysis." });
         }
-        const result = await callDeepSeekVision({
+        const result = await callQwenVision({
           image: body.image,
           system: "You are a nutrition vision assistant. Return strict JSON only. Estimate food items, bounding boxes in percentage coordinates, macros, cooking method, portion, confidence, and calorie ranges. Use ranges, not single-point certainty.",
           userText: "Analyze this meal image. JSON shape: {foods:[{id,name,kcalRange:[min,max],protein,carb,fat,portion,cooking,box:{left,top,width,height}}],summary:{totalKcalRange:[min,max],confidence}}."
@@ -283,11 +283,12 @@ async function handleApi(req, res, pathname) {
 }
 
 function getHealthPayload() {
-  const activeKey = AI_PROVIDER === "deepseek" ? DEEPSEEK_API_KEY : OPENAI_API_KEY;
+  const activeKey = AI_PROVIDER === "qwen" ? QWEN_API_KEY : OPENAI_API_KEY;
   return {
     provider: AI_PROVIDER,
-    model: AI_PROVIDER === "deepseek" ? DEEPSEEK_MODEL : MODEL,
-    visionModel: AI_PROVIDER === "deepseek" ? DEEPSEEK_VISION_MODEL : MODEL,
+    model: AI_PROVIDER === "qwen" ? QWEN_MODEL : MODEL,
+    visionModel: AI_PROVIDER === "qwen" ? QWEN_VISION_MODEL : MODEL,
+    baseUrl: AI_PROVIDER === "qwen" ? QWEN_BASE_URL : undefined,
     hasApiKey: Boolean(activeKey),
     mode: activeKey ? "live" : "mock",
     visionReady: Boolean(activeKey),
