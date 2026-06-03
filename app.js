@@ -177,8 +177,8 @@ let selectedFoodId = null;
 let selectedMealType = "lunch";
 let activeRecordMealType = "lunch";
 let mealLog = {
-  breakfast: 420,
-  lunch: 760,
+  breakfast: 0,
+  lunch: 0,
   dinner: 0,
   snack: 0,
   drink: 0,
@@ -191,11 +191,7 @@ let drinkState = {
   toppings: ["pearl"],
   recognized: false,
 };
-let stickers = [
-  { title: "早餐燕麦", kcal: 420, x: 8, y: 16, rotate: "-7deg", color: "#8a6a38", icon: null },
-  { title: "鸡腿饭", kcal: 610, x: 52, y: 22, rotate: "6deg", color: "#536f45", icon: null },
-  { title: "拿铁", kcal: 180, x: 26, y: 58, rotate: "-3deg", color: "#6d4b31", icon: null },
-];
+let stickers = [];
 let timerState = {
   running: false,
   phase: "ready",
@@ -249,7 +245,6 @@ async function prepareStickerIcons() {
       }
       return icons;
     });
-    stickers = stickers.map((sticker, index) => ({ ...sticker, icon: stickerIcons[index] }));
     renderStickers();
   } catch {
     stickerIcons = [];
@@ -616,6 +611,10 @@ async function refreshAiWeeklyReport() {
 
 function renderStickers(offsetX = 0, offsetY = 0) {
   stickerCount.textContent = `${stickers.length} 张`;
+  if (!stickers.length) {
+    stickerWall.innerHTML = '<div class="sticker-empty">还没有记录。拍一餐后，食物会变成贴纸出现在这里。</div>';
+    return;
+  }
   stickerWall.innerHTML = stickers
     .map(
       (item, index) => `

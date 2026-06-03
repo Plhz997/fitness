@@ -573,6 +573,17 @@ h2 {
   font-size: 11px;
 }
 
+.sticker-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 850;
+  padding: 24px;
+  text-align: center;
+}
+
 .food-sticker img {
   width: 82px;
   height: 82px;
