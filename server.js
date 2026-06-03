@@ -4,6 +4,28 @@ import { extname, join, normalize } from "node:path";
 
 const PORT = Number(process.env.PORT) || 4173;
 const ROOT = process.cwd();
+
+async function loadLocalEnv() {
+  try {
+    const text = await readFile(join(ROOT, ".env"), "utf8");
+    for (const line of text.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const separator = trimmed.indexOf("=");
+      if (separator === -1) continue;
+      const key = trimmed.slice(0, separator).trim();
+      const value = trimmed.slice(separator + 1).trim();
+      if (key && process.env[key] === undefined) {
+        process.env[key] = value;
+      }
+    }
+  } catch {
+    // Local .env is optional; deployments can provide environment variables directly.
+  }
+}
+
+await loadLocalEnv();
+
 const MODEL = process.env.OPENAI_MODEL || "gpt-5.4-mini";
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
