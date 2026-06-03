@@ -11,11 +11,11 @@
       <section class="app-screen">
         <header class="top-bar">
           <div>
-            <p class="eyebrow">第 7 天连续记录</p>
+            <p class="eyebrow" id="headerStreak">准备开始记录</p>
             <h1>轻食闯关</h1>
           </div>
-          <button class="icon-button" aria-label="打开个人中心">
-            <span aria-hidden="true">7</span>
+          <button class="icon-button" id="profileShortcut" aria-label="打开个人中心">
+            <span aria-hidden="true" id="headerRecordCount">0</span>
           </button>
         </header>
 
@@ -23,15 +23,16 @@
           <div class="quest-hero">
             <div>
               <p class="eyebrow">今日任务</p>
-              <h2>完成 3 次记录，拿下清淡晚餐徽章</h2>
+              <h2 id="questTitle">拍下第一餐，建立今天的热量预算</h2>
             </div>
-            <strong>260 XP</strong>
+            <strong id="xpValue">0 XP</strong>
           </div>
           <div class="quest-path">
             <button type="button" class="quest-node active">拍第一餐</button>
             <button type="button" class="quest-node">识别饮料</button>
             <button type="button" class="quest-node">少糖饮料</button>
           </div>
+          <button type="button" class="quest-cta" id="startScanButton">开始识别</button>
         </section>
 
         <section class="sticker-panel view-panel" data-view="home" aria-label="饮食照片贴纸墙">
@@ -71,6 +72,17 @@
               <strong><span id="remainingBudget">620</span> kcal</strong>
             </div>
           </div>
+        </section>
+
+        <section class="ai-status-panel view-panel" data-view="scan" aria-label="AI 接口状态">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">AI 状态</p>
+              <h2>照片识别服务</h2>
+            </div>
+            <span id="aiStatusPill">检查中</span>
+          </div>
+          <p id="aiStatusText">正在确认模型和密钥配置。</p>
         </section>
 
         <section class="smart-tools-panel view-panel" data-view="scan" aria-label="包装食品与营养识别">
@@ -198,18 +210,19 @@
 
         <section class="profile-panel-main view-panel" data-view="profile" aria-label="个人主页">
           <div class="profile-hero">
-            <div class="profile-avatar">7</div>
+            <div class="profile-avatar" id="profileAvatar">0</div>
             <div>
               <p class="eyebrow">个人主页</p>
-              <h2>第 7 天连续记录</h2>
-              <span>260 XP · 学生党模式</span>
+              <h2 id="profileTitle">还没有连续记录</h2>
+              <span id="profileSubtitle">完善资料后，预算会更贴近你</span>
             </div>
           </div>
           <div class="profile-stats">
             <div><small>今日预算</small><strong><span id="profileBudget">1800</span></strong></div>
-            <div><small>连续记录</small><strong>7 天</strong></div>
-            <div><small>徽章</small><strong>4 枚</strong></div>
+            <div><small>连续记录</small><strong><span id="profileStreak">0</span> 天</strong></div>
+            <div><small>徽章</small><strong><span id="profileBadgeCount">0</span> 枚</strong></div>
           </div>
+          <button class="secondary-action motion-button" id="clearRecordsButton" type="button">清空本地记录</button>
         </section>
 
         <section class="profile-settings-panel view-panel" data-view="profile" aria-label="身体资料与预算设置">
@@ -303,7 +316,7 @@
               <p class="eyebrow">成就系统</p>
               <h2>我的徽章</h2>
             </div>
-            <span>4 枚</span>
+            <span id="badgeCountLabel">0 枚</span>
           </div>
           <div class="badge-list" id="profileBadgeList" aria-label="个人徽章"></div>
         </section>
@@ -349,6 +362,7 @@
             <small>饮料估算热量</small>
             <strong><span id="drinkCalories">--</span> kcal</strong>
             <p id="drinkDetail">选择规格、糖度和配料后生成估算</p>
+            <button class="primary-action compact-action" id="addDrinkButton" type="button">加入今日记录</button>
           </div>
         </section>
 
@@ -380,9 +394,9 @@
         <section class="weekly-panel view-panel" data-view="profile" aria-label="每周热量统计">
           <div class="section-title">
             <h2>饮食周报</h2>
-            <span id="weeklyTotal">10,820 kcal</span>
+            <span id="weeklyTotal">0 kcal</span>
           </div>
-          <p class="weekly-narrative" id="weeklyNarrative">本周共记录 18 餐，日均摄入 1760 kcal。</p>
+          <p class="weekly-narrative" id="weeklyNarrative">本周还没有饮食记录。完成第一餐后，这里会生成趋势和提醒。</p>
           <div class="bars" id="weeklyBars"></div>
           <div class="week-summary">
             <div>
@@ -391,7 +405,7 @@
             </div>
             <div>
               <small>目标内</small>
-              <strong>5 天</strong>
+              <strong id="withinBudgetDays">0 天</strong>
             </div>
             <div>
               <small>最高</small>

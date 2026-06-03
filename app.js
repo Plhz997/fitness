@@ -4,6 +4,14 @@ const viewPanels = document.querySelectorAll("[data-view]");
 const stickerWall = document.querySelector("#stickerWall");
 const stickerCount = document.querySelector("#stickerCount");
 const motionButton = document.querySelector("#motionButton");
+const headerStreak = document.querySelector("#headerStreak");
+const headerRecordCount = document.querySelector("#headerRecordCount");
+const profileShortcut = document.querySelector("#profileShortcut");
+const questTitle = document.querySelector("#questTitle");
+const xpValue = document.querySelector("#xpValue");
+const startScanButton = document.querySelector("#startScanButton");
+const aiStatusPill = document.querySelector("#aiStatusPill");
+const aiStatusText = document.querySelector("#aiStatusText");
 const barcodeButton = document.querySelector("#barcodeButton");
 const foodSearchInput = document.querySelector("#foodSearchInput");
 const foodSearchButton = document.querySelector("#foodSearchButton");
@@ -28,6 +36,7 @@ const sugarOptions = document.querySelector("#sugarOptions");
 const toppingOptions = document.querySelector("#toppingOptions");
 const drinkCalories = document.querySelector("#drinkCalories");
 const drinkDetail = document.querySelector("#drinkDetail");
+const addDrinkButton = document.querySelector("#addDrinkButton");
 const emptyCamera = document.querySelector("#emptyCamera");
 const cutoutMask = document.querySelector("#cutoutMask");
 const foodBoxLayer = document.querySelector("#foodBoxLayer");
@@ -61,6 +70,7 @@ const weeklyBars = document.querySelector("#weeklyBars");
 const weeklyTotal = document.querySelector("#weeklyTotal");
 const averageValue = document.querySelector("#averageValue");
 const peakValue = document.querySelector("#peakValue");
+const withinBudgetDays = document.querySelector("#withinBudgetDays");
 const breakfastAvg = document.querySelector("#breakfastAvg");
 const dinnerAvg = document.querySelector("#dinnerAvg");
 const lateSnackCount = document.querySelector("#lateSnackCount");
@@ -76,6 +86,13 @@ const weekKeywords = document.querySelector("#weekKeywords");
 const warningList = document.querySelector("#warningList");
 const badgeList = document.querySelector("#badgeList");
 const profileBadgeList = document.querySelector("#profileBadgeList");
+const profileAvatar = document.querySelector("#profileAvatar");
+const profileTitle = document.querySelector("#profileTitle");
+const profileSubtitle = document.querySelector("#profileSubtitle");
+const profileStreak = document.querySelector("#profileStreak");
+const profileBadgeCount = document.querySelector("#profileBadgeCount");
+const badgeCountLabel = document.querySelector("#badgeCountLabel");
+const clearRecordsButton = document.querySelector("#clearRecordsButton");
 const timerPhase = document.querySelector("#timerPhase");
 const timerRound = document.querySelector("#timerRound");
 const timerTime = document.querySelector("#timerTime");
@@ -153,25 +170,8 @@ const mealTypes = [
   { id: "lateSnack", label: "夜宵" },
 ];
 
-const weekData = [
-  { day: "一", kcal: 1420 },
-  { day: "二", kcal: 1680 },
-  { day: "三", kcal: 1260 },
-  { day: "四", kcal: 1920 },
-  { day: "五", kcal: 1510 },
-  { day: "六", kcal: 1760 },
-  { day: "日", kcal: 1470 },
-];
-
-const weeklyMealData = [
-  { day: "一", breakfast: 390, lunch: 720, dinner: 650, snack: 160, drink: 80, lateSnack: 0 },
-  { day: "二", breakfast: 430, lunch: 760, dinner: 690, snack: 120, drink: 120, lateSnack: 180 },
-  { day: "三", breakfast: 360, lunch: 640, dinner: 610, snack: 90, drink: 60, lateSnack: 0 },
-  { day: "四", breakfast: 450, lunch: 830, dinner: 760, snack: 150, drink: 180, lateSnack: 220 },
-  { day: "五", breakfast: 410, lunch: 760, dinner: 700, snack: 110, drink: 90, lateSnack: 0 },
-  { day: "六", breakfast: 520, lunch: 820, dinner: 780, snack: 230, drink: 160, lateSnack: 260 },
-  { day: "日", breakfast: 430, lunch: 760, dinner: 720, snack: 140, drink: 130, lateSnack: 0 },
-];
+const weekdayLabels = ["日", "一", "二", "三", "四", "五", "六"];
+const storageKey = "calorieQuestState.v2";
 
 let detectedFoods = [];
 let confirmed = false;
@@ -194,6 +194,8 @@ let drinkState = {
   recognized: false,
 };
 let stickers = [];
+let records = [];
+let pendingRecord = null;
 let timerState = {
   running: false,
   phase: "ready",
@@ -260,6 +262,92 @@ function setView(view) {
   navItems.forEach((item) => {
     item.classList.toggle("active", item.dataset.nav === view);
   });
+}
+
+function todayKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getRecordDate(record) {
+  return new Date(record.createdAt || Date.now());
+}
+
+function getTodayRecords() {
+  const today = todayKey();
+  return records.filter((record) => todayKey(getRecordDate(record)) === today);
+}
+
+function getCurrentWeekRecords() {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  return records.filter((record) => getRecordDate(record) >= start);
+}
+
+function getMealTotals(sourceRecords = getTodayRecords()) {
+  return sourceRecords.reduce(
+    (totals, record) => {
+      totals[record.mealType] = (totals[record.mealType] || 0) + record.kcal;
+      return totals;
+    },
+    { breakfast: 0, lunch: 0, dinner: 0, snack: 0, drink: 0, lateSnack: 0 },
+  );
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify({ records, stickers }));
+  } catch {
+    // Local persistence is best-effort.
+  }
+}
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    records = Array.isArray(saved.records) ? saved.records : [];
+    stickers = Array.isArray(saved.stickers) ? saved.stickers : [];
+  } catch {
+    records = [];
+    stickers = [];
+  }
+}
+
+function getBadges() {
+  const weekRecords = getCurrentWeekRecords();
+  const badges = [];
+  if (records.length >= 1) badges.push("记录小能手");
+  if (weekRecords.length >= 5) badges.push("周报达人");
+  if (weekRecords.filter((record) => record.mealType === "drink").reduce((sum, record) => sum + record.kcal, 0) <= 250 && weekRecords.length >= 3) {
+    badges.push("奶茶克制者");
+  }
+  if (weekRecords.some((record) => record.title.includes("沙拉") || record.title.includes("青菜"))) {
+    badges.push("蔬菜守护者");
+  }
+  return badges;
+}
+
+function renderShellState() {
+  const todayRecords = getTodayRecords();
+  const recordCount = todayRecords.length;
+  const xp = records.length * 20;
+  const badges = getBadges();
+  headerRecordCount.textContent = recordCount;
+  headerStreak.textContent = recordCount ? `今天已记录 ${recordCount} 餐` : "准备开始记录";
+  questTitle.textContent = recordCount
+    ? `今天已记录 ${recordCount} 餐，继续补全照片日记`
+    : "拍下第一餐，建立今天的热量预算";
+  xpValue.textContent = `${xp} XP`;
+  profileAvatar.textContent = recordCount;
+  profileTitle.textContent = recordCount ? `今天已记录 ${recordCount} 餐` : "还没有连续记录";
+  profileSubtitle.textContent = `${xp} XP · ${healthModeInput.options[healthModeInput.selectedIndex]?.text || "学生党模式"}`;
+  profileStreak.textContent = records.length ? 1 : 0;
+  profileBadgeCount.textContent = badges.length;
+  badgeCountLabel.textContent = `${badges.length} 枚`;
+  profileBadgeList.innerHTML = badges.length
+    ? badges.map((text) => `<div class="badge-item">${text}</div>`).join("")
+    : '<div class="badge-empty">完成第一次记录后，会在这里点亮徽章。</div>';
 }
 
 function beep(frequency = 880, duration = 130) {
@@ -415,11 +503,12 @@ function createDetectedFoods() {
 }
 
 function renderBars() {
+  const weekData = buildWeekData();
   const max = Math.max(...weekData.map((item) => item.kcal));
   const total = weekData.reduce((sum, item) => sum + item.kcal, 0);
   weeklyBars.innerHTML = weekData
     .map((item) => {
-      const height = Math.max(18, Math.round((item.kcal / max) * 98));
+      const height = item.kcal ? Math.max(18, Math.round((item.kcal / Math.max(max, 1)) * 98)) : 4;
       return `
         <div class="bar-item" title="${item.kcal} kcal">
           <div class="bar-track">
@@ -431,8 +520,10 @@ function renderBars() {
     })
     .join("");
   weeklyTotal.textContent = `${total.toLocaleString("zh-CN")} kcal`;
-  averageValue.textContent = Math.round(total / weekData.length).toLocaleString("zh-CN");
+  const activeDays = weekData.filter((item) => item.kcal > 0).length;
+  averageValue.textContent = activeDays ? Math.round(total / activeDays).toLocaleString("zh-CN") : "0";
   peakValue.textContent = max.toLocaleString("zh-CN");
+  withinBudgetDays.textContent = `${weekData.filter((item) => item.kcal > 0 && item.kcal <= calculateDailyBudget()).length} 天`;
 }
 
 function renderMealTypeOptions() {
@@ -508,15 +599,10 @@ function renderDrinkModule() {
   drinkPreview.classList.toggle("recognized", drinkState.recognized);
   drinkStatus.textContent = drinkState.recognized ? "已识别" : "待识别";
   drinkName.textContent = drinkState.recognized ? `识别结果：${type.label}` : "拍照识别饮料";
-  drinkCalories.textContent = calories.toLocaleString("zh-CN");
+  drinkCalories.textContent = drinkState.recognized ? calories.toLocaleString("zh-CN") : "--";
   drinkDetail.textContent = `${type.label} · ${size.label} · ${sugar.label} · ${
     selectedToppings.length ? selectedToppings.map((item) => item.label).join("、") : "无配料"
   }`;
-
-  if (drinkState.recognized) {
-    mealLog.drink = calories;
-    renderBudget();
-  }
 }
 
 function calculateDailyBudget() {
@@ -532,6 +618,7 @@ function calculateDailyBudget() {
 
 function renderBudget() {
   const budget = calculateDailyBudget();
+  mealLog = getMealTotals();
   const consumed = Object.values(mealLog).reduce((sum, kcal) => sum + kcal, 0);
   const remaining = budget - consumed;
   const progress = Math.min(100, Math.max(0, (consumed / budget) * 100));
@@ -542,27 +629,38 @@ function renderBudget() {
   lunchKcal.textContent = mealLog.lunch.toLocaleString("zh-CN");
   remainingBudget.textContent = remaining.toLocaleString("zh-CN");
   budgetFill.style.width = `${progress}%`;
+  renderShellState();
+}
+
+function buildWeekData() {
+  const weekRecords = getCurrentWeekRecords();
+  const data = ["一", "二", "三", "四", "五", "六", "日"].map((day) => ({ day, kcal: 0 }));
+  weekRecords.forEach((record) => {
+    const label = weekdayLabels[getRecordDate(record).getDay()];
+    const item = data.find((entry) => entry.day === label);
+    if (item) item.kcal += record.kcal;
+  });
+  return data;
 }
 
 function renderMealStats() {
-  const weeklyTotalKcal = weeklyMealData.reduce(
-    (sum, day) => sum + mealTypes.reduce((mealSum, meal) => mealSum + day[meal.id], 0),
-    0,
-  );
-  const breakfastAverage = Math.round(
-    weeklyMealData.reduce((sum, day) => sum + day.breakfast, 0) / weeklyMealData.length,
-  );
-  const dinnerAverage = Math.round(
-    weeklyMealData.reduce((sum, day) => sum + day.dinner, 0) / weeklyMealData.length,
-  );
-  const lateCount = weeklyMealData.filter((day) => day.lateSnack > 0).length;
-  const drinkTotal = weeklyMealData.reduce((sum, day) => sum + day.drink, 0);
-  const snackTotal = weeklyMealData.reduce((sum, day) => sum + day.snack, 0);
-  const drinkShare = Math.round((drinkTotal / weeklyTotalKcal) * 100);
-  const snackShare = Math.round((snackTotal / weeklyTotalKcal) * 100);
+  const weekRecords = getCurrentWeekRecords();
+  const weeklyTotalKcal = weekRecords.reduce((sum, record) => sum + record.kcal, 0);
+  const byMeal = getMealTotals(weekRecords);
+  const daysWithBreakfast = new Set(
+    weekRecords.filter((record) => record.mealType === "breakfast").map((record) => todayKey(getRecordDate(record))),
+  ).size;
+  const daysWithDinner = new Set(
+    weekRecords.filter((record) => record.mealType === "dinner").map((record) => todayKey(getRecordDate(record))),
+  ).size;
+  const breakfastAverage = daysWithBreakfast ? Math.round(byMeal.breakfast / daysWithBreakfast) : 0;
+  const dinnerAverage = daysWithDinner ? Math.round(byMeal.dinner / daysWithDinner) : 0;
+  const lateCount = weekRecords.filter((record) => record.mealType === "lateSnack").length;
+  const drinkShare = weeklyTotalKcal ? Math.round((byMeal.drink / weeklyTotalKcal) * 100) : 0;
+  const snackShare = weeklyTotalKcal ? Math.round((byMeal.snack / weeklyTotalKcal) * 100) : 0;
 
-  breakfastAvg.textContent = `${breakfastAverage} kcal`;
-  dinnerAvg.textContent = `${dinnerAverage} kcal`;
+  breakfastAvg.textContent = breakfastAverage ? `${breakfastAverage} kcal` : "--";
+  dinnerAvg.textContent = dinnerAverage ? `${dinnerAverage} kcal` : "--";
   lateSnackCount.textContent = `${lateCount} 次`;
   drinkShareText.textContent = `${drinkShare}%`;
   snackShareText.textContent = `${snackShare}%`;
@@ -571,31 +669,49 @@ function renderMealStats() {
 }
 
 function renderAdvancedReport() {
-  weeklyNarrative.textContent =
-    "本周共记录 18 餐，日均摄入 1760 kcal。周三摄入最高，主要来自晚餐和奶茶；蛋白质占比偏低，建议下周增加鸡蛋、鱼肉、豆制品。";
-  lowestDay.textContent = "周三";
-  overBudgetDays.textContent = "2 天";
-  streakDays.textContent = "7 天";
-  weekKeywords.textContent = "食堂 / 奶茶 / 蛋白偏低";
+  const weekRecords = getCurrentWeekRecords();
+  if (!weekRecords.length) {
+    weeklyNarrative.textContent = "本周还没有饮食记录。完成第一餐后，这里会生成趋势和提醒。";
+    lowestDay.textContent = "--";
+    overBudgetDays.textContent = "0 天";
+    streakDays.textContent = "0 天";
+    weekKeywords.textContent = "暂无";
+    warningList.innerHTML = '<div class="warning-item">先记录一餐，再让 AI 帮你看趋势。</div>';
+    badgeList.innerHTML = '<div class="badge-empty">暂无周报徽章</div>';
+    return;
+  }
+
+  const total = weekRecords.reduce((sum, record) => sum + record.kcal, 0);
+  const dayData = buildWeekData();
+  const activeDays = dayData.filter((day) => day.kcal > 0);
+  const peak = activeDays.reduce((max, day) => (day.kcal > max.kcal ? day : max), activeDays[0]);
+  const lowest = activeDays.reduce((min, day) => (day.kcal < min.kcal ? day : min), activeDays[0]);
+  const drinkTotal = weekRecords.filter((record) => record.mealType === "drink").reduce((sum, record) => sum + record.kcal, 0);
+  const avg = Math.round(total / Math.max(activeDays.length, 1));
+  weeklyNarrative.textContent = `本周共记录 ${weekRecords.length} 餐，日均摄入 ${avg} kcal。${peak.day}摄入最高，建议优先确认当天晚餐和饮料。`;
+  lowestDay.textContent = `周${lowest.day}`;
+  overBudgetDays.textContent = `${activeDays.filter((day) => day.kcal > calculateDailyBudget()).length} 天`;
+  streakDays.textContent = `${records.length ? 1 : 0} 天`;
+  weekKeywords.textContent = drinkTotal > 0 ? "饮料 / 食堂 / 份量确认" : "食堂 / 份量确认";
   warningList.innerHTML = [
-    "本周饮料热量明显增加，建议优先选择无糖饮品。",
-    "连续 2 天蛋白质偏低，可以增加鸡蛋、牛奶或豆制品。",
-    "周末摄入高于工作日，建议晚餐选择更清淡的组合。",
+    drinkTotal > 300 ? "本周饮料热量偏高，下一杯可以优先选无糖。" : "饮料热量目前可控，继续保持。",
+    activeDays.some((day) => day.kcal > calculateDailyBudget()) ? "出现超预算日，建议明天午餐选择更清淡的组合。" : "本周暂未明显超预算。",
   ]
     .map((text) => `<div class="warning-item">${text}</div>`)
     .join("");
-  badgeList.innerHTML = ["记录小能手", "奶茶克制者", "蔬菜守护者", "周报达人"]
-    .map((text) => `<div class="badge-item">${text}</div>`)
-    .join("");
-  profileBadgeList.innerHTML = badgeList.innerHTML;
+  badgeList.innerHTML = getBadges().length
+    ? getBadges().map((text) => `<div class="badge-item">${text}</div>`).join("")
+    : '<div class="badge-empty">继续记录，徽章快亮起来了。</div>';
 }
 
 async function refreshAiWeeklyReport() {
   try {
+    const weekRecords = getCurrentWeekRecords();
+    if (!weekRecords.length) return;
     const response = await fetch("/api/weekly-report", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ records: weeklyMealData }),
+      body: JSON.stringify({ records: weekRecords }),
     });
     const report = await response.json();
     if (report.summary) weeklyNarrative.textContent = report.summary;
@@ -657,21 +773,21 @@ function addSticker(title, kcal) {
     },
   ];
   renderStickers();
+  saveState();
 }
 
 function addRecord(title, kcal, mealType = selectedMealType) {
-  mealLog[mealType] = (mealLog[mealType] || 0) + kcal;
-  addSticker(title, kcal);
-  renderBudget();
-}
-
-function updateCurrentMealLog() {
-  if (!detectedFoods.length) return;
-  if (activeRecordMealType && activeRecordMealType !== selectedMealType) {
-    mealLog[activeRecordMealType] = 0;
-  }
-  mealLog[selectedMealType] = getTotals().kcal;
-  activeRecordMealType = selectedMealType;
+  const record = {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    title,
+    kcal: Math.max(0, Math.round(kcal)),
+    mealType,
+    createdAt: new Date().toISOString(),
+  };
+  records = [record, ...records];
+  addSticker(title, record.kcal);
+  saveState();
+  renderAllStats();
 }
 
 function getCooking(food) {
@@ -714,6 +830,14 @@ function updateSummary() {
   confidenceText.textContent = confirmed
     ? `已按你的确认结果记录到${mealLabel}`
     : `请确认识别结果，这餐将记录到${mealLabel}`;
+}
+
+function renderAllStats() {
+  renderBudget();
+  renderBars();
+  renderMealStats();
+  renderAdvancedReport();
+  renderShellState();
 }
 
 function renderDetectedList() {
@@ -805,7 +929,7 @@ function refreshResultUi() {
   const names = detectedFoods.map((food) => food.name).join("、");
   foodName.textContent = detectedFoods.length ? "请确认识别结果" : "等待确认";
   confirmText.textContent = detectedFoods.length ? `识别结果：${names}` : "上传图片后可校正识别结果";
-  confirmButton.disabled = !detectedFoods.length;
+  confirmButton.disabled = !detectedFoods.length || confirmed;
   confirmButton.textContent = confirmed ? "已确认" : "确认正确";
   confirmButton.classList.toggle("confirmed", confirmed);
   statusPill.textContent = detectedFoods.length ? (confirmed ? "已确认" : "待确认") : "未开始";
@@ -848,12 +972,10 @@ function setRecognizing() {
 function setResult() {
   detectedFoods = createDetectedFoods();
   selectedFoodId = detectedFoods[0].id;
-  updateCurrentMealLog();
-  addSticker("餐盘四件套", getTotals().kcal);
+  pendingRecord = { title: "餐盘四件套", mealType: selectedMealType };
   cutoutMask.hidden = true;
   scanLine.hidden = true;
   refreshResultUi();
-  renderBudget();
 }
 
 function normalizeAiFoods(result) {
@@ -887,6 +1009,23 @@ async function analyzeFoodWithAi(image) {
   return data;
 }
 
+async function checkAiHealth() {
+  try {
+    const response = await fetch("/api/health");
+    if (!response.ok) throw new Error("health check failed");
+    const health = await response.json();
+    aiStatusPill.textContent = health.mode === "live" ? "已配置" : "演示模式";
+    aiStatusPill.classList.toggle("live", health.mode === "live");
+    aiStatusText.textContent =
+      health.provider === "deepseek"
+        ? "DeepSeek 已用于文本建议。照片识别需要 OpenAI 视觉模型，请把 AI_PROVIDER 设为 openai。"
+        : `当前使用 ${health.model}。${health.mode === "live" ? "已检测到密钥，上传照片后会请求真实视觉模型。" : "未检测到 OPENAI_API_KEY，拍照识别会进入演示/失败提示。"}`;
+  } catch {
+    aiStatusPill.textContent = "未连接";
+    aiStatusText.textContent = "请通过 npm start 或线上部署地址打开应用，file:// 方式无法调用 AI 接口。";
+  }
+}
+
 async function recognizeImage(src) {
   foodPreview.src = src;
   foodPreview.hidden = false;
@@ -896,8 +1035,7 @@ async function recognizeImage(src) {
     const result = await analyzeFoodWithAi(src);
     detectedFoods = normalizeAiFoods(result);
     selectedFoodId = detectedFoods[0].id;
-    updateCurrentMealLog();
-    addSticker("AI 餐盘识别", getTotals().kcal);
+    pendingRecord = { title: "AI 餐盘识别", mealType: selectedMealType };
     confidenceText.textContent = result.summary?.confidence || "AI 已返回热量区间，请确认份量。";
     cutoutMask.hidden = true;
     scanLine.hidden = true;
@@ -910,6 +1048,7 @@ async function recognizeImage(src) {
     detectedList.innerHTML = `<div class="detected-empty">没有返回真实识别结果。请检查模型、API Key，或换一张更清晰的图片。</div>`;
     cutoutMask.hidden = true;
     scanLine.hidden = true;
+    checkAiHealth();
   }
 }
 
@@ -929,7 +1068,6 @@ function recognizeDrink(type = "milkTea") {
   };
   renderMealTypeOptions();
   renderDrinkModule();
-  addSticker(drinkTypes.find((item) => item.id === type)?.label || "饮料", getDrinkCalories());
 }
 
 drinkInput.addEventListener("change", (event) => {
@@ -982,9 +1120,10 @@ drinkDemoButton.addEventListener("click", () => {
 confirmButton.addEventListener("click", () => {
   if (!detectedFoods.length) return;
   confirmed = true;
-  updateCurrentMealLog();
+  const names = detectedFoods.map((food) => food.name).join("、") || pendingRecord?.title || "餐盘识别";
+  addRecord(names, getTotals().kcal, selectedMealType);
+  pendingRecord = null;
   refreshResultUi();
-  renderBudget();
 });
 
 detectedList.addEventListener("click", (event) => {
@@ -998,9 +1137,7 @@ detectedList.addEventListener("click", (event) => {
   if (event.target.matches("[data-action='portion']")) {
     food.portion = Number(event.target.dataset.value);
     confirmed = false;
-    updateCurrentMealLog();
     refreshResultUi();
-    renderBudget();
   }
 
   if (event.target.matches(".edit-food")) {
@@ -1042,9 +1179,7 @@ detectedList.addEventListener("change", (event) => {
   if (event.target.matches(".cook-select")) {
     food.cooking = event.target.value;
     confirmed = false;
-    updateCurrentMealLog();
     refreshResultUi();
-    renderBudget();
   }
 });
 
@@ -1052,11 +1187,8 @@ mealTypeOptions.addEventListener("click", (event) => {
   const button = event.target.closest("[data-meal-type]");
   if (!button) return;
   selectedMealType = button.dataset.mealType;
-  if (detectedFoods.length) {
-    updateCurrentMealLog();
-  }
   renderMealTypeOptions();
-  renderBudget();
+  refreshResultUi();
 });
 
 function handleDrinkOptionClick(event) {
@@ -1092,6 +1224,14 @@ drinkTypeOptions.addEventListener("click", handleDrinkOptionClick);
 drinkSizeOptions.addEventListener("click", handleDrinkOptionClick);
 sugarOptions.addEventListener("click", handleDrinkOptionClick);
 toppingOptions.addEventListener("click", handleDrinkOptionClick);
+
+addDrinkButton.addEventListener("click", () => {
+  if (!drinkState.recognized) {
+    recognizeDrink(drinkState.type);
+  }
+  const type = drinkTypes.find((item) => item.id === drinkState.type) || drinkTypes[0];
+  addRecord(type.label, getDrinkCalories(), "drink");
+});
 
 barcodeButton.addEventListener("click", async () => {
   packageGramInput.value = 45;
@@ -1129,9 +1269,9 @@ ocrButton.addEventListener("click", async () => {
     });
     const result = await response.json();
     const kcal = result.per100g?.energyKcal || result.perServing?.energyKcal || 196;
-    addSticker(result.productName || "营养表 OCR", kcal);
+    addRecord(result.productName || "营养表 OCR", kcal, "snack");
   } catch {
-    addSticker("营养表 OCR", 196);
+    addRecord("营养表 OCR", 196, "snack");
   }
 });
 
@@ -1166,6 +1306,22 @@ navItems.forEach((item) => {
   item.addEventListener("click", () => {
     setView(item.dataset.nav);
   });
+});
+
+profileShortcut.addEventListener("click", () => {
+  setView("profile");
+});
+
+startScanButton.addEventListener("click", () => {
+  setView("scan");
+});
+
+clearRecordsButton.addEventListener("click", () => {
+  records = [];
+  stickers = [];
+  saveState();
+  renderStickers();
+  renderAllStats();
 });
 
 motionButton.addEventListener("click", async () => {
@@ -1224,11 +1380,11 @@ profileForm.addEventListener("submit", (event) => {
 profileForm.addEventListener("change", renderBudget);
 profileForm.addEventListener("input", renderBudget);
 
+loadState();
 renderBars();
 renderMealTypeOptions();
 renderMealStats();
 renderAdvancedReport();
-refreshAiWeeklyReport();
 renderContextTip();
 renderStickers();
 renderBudget();
@@ -1237,3 +1393,5 @@ refreshResultUi();
 setView("home");
 prepareStickerIcons();
 renderTimer();
+checkAiHealth();
+refreshAiWeeklyReport();

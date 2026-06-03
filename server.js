@@ -39,6 +39,9 @@ const mimeTypes = {
   ".js": "application/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
 };
 
 function sendJson(res, status, payload) {
@@ -172,6 +175,11 @@ async function handleApi(req, res, pathname) {
           error: "DeepSeek 当前接口不支持直接图片识别。请用 OpenAI 视觉模型做拍照识别，DeepSeek 可用于周报和文本建议。"
         });
       }
+      if (!OPENAI_API_KEY) {
+        return sendJson(res, 503, {
+          error: "缺少 OPENAI_API_KEY，无法进行真实拍照识别。请在本地 .env 或部署平台环境变量中配置有效 OpenAI Key。"
+        });
+      }
       if (!body.image) {
         return sendJson(res, 400, { error: "No image was provided for food analysis." });
       }
@@ -180,7 +188,6 @@ async function handleApi(req, res, pathname) {
         system: "You are a nutrition vision assistant. Return strict JSON only. Estimate food items, bounding boxes in percentage coordinates, macros, cooking method, portion, confidence, and calorie ranges. Use ranges, not single-point certainty.",
         userText: "Analyze this meal image. JSON shape: {foods:[{id,name,kcalRange:[min,max],protein,carb,fat,portion,cooking,box:{left,top,width,height}}],summary:{totalKcalRange:[min,max],confidence}}."
       });
-      if (result.mocked) return sendJson(res, 200, { ...mockFoodAnalysis(), mocked: true });
       return sendJson(res, 200, result);
     }
 
@@ -220,18 +227,24 @@ async function handleApi(req, res, pathname) {
     }
 
     if (pathname === "/api/health") {
-      return sendJson(res, 200, {
-        provider: AI_PROVIDER,
-        model: AI_PROVIDER === "deepseek" ? DEEPSEEK_MODEL : MODEL,
-        hasApiKey: AI_PROVIDER === "deepseek" ? Boolean(DEEPSEEK_API_KEY) : Boolean(OPENAI_API_KEY),
-        mode: (AI_PROVIDER === "deepseek" ? DEEPSEEK_API_KEY : OPENAI_API_KEY) ? "live" : "mock"
-      });
+      return sendJson(res, 200, getHealthPayload());
     }
 
     return sendJson(res, 404, { error: "Unknown API route." });
   } catch (error) {
     return sendJson(res, 500, { error: error.message });
   }
+}
+
+function getHealthPayload() {
+  const activeKey = AI_PROVIDER === "deepseek" ? DEEPSEEK_API_KEY : OPENAI_API_KEY;
+  return {
+    provider: AI_PROVIDER,
+    model: AI_PROVIDER === "deepseek" ? DEEPSEEK_MODEL : MODEL,
+    hasApiKey: Boolean(activeKey),
+    mode: activeKey ? "live" : "mock",
+    visionReady: AI_PROVIDER === "openai" && Boolean(OPENAI_API_KEY),
+  };
 }
 
 async function serveStatic(req, res, pathname) {
@@ -255,6 +268,10 @@ async function serveStatic(req, res, pathname) {
 
 createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  if (req.method === "GET" && url.pathname === "/api/health") {
+    sendJson(res, 200, getHealthPayload());
+    return;
+  }
   if (req.method === "POST" && url.pathname.startsWith("/api/")) {
     await handleApi(req, res, url.pathname);
     return;
