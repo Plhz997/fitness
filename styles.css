@@ -1215,7 +1215,7 @@ h2 {
   bottom: 18px;
   left: 18px;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   padding: 8px;
   border: 1px solid var(--line);
@@ -1234,7 +1234,7 @@ h2 {
   gap: 2px;
   place-items: center;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
 }
 
